@@ -64,17 +64,20 @@ class ArchiveRepositoryImpl @Inject constructor(
             val entity = archive.toEntity(syncStatus = "DRAFT")
             archiveDao.insertArchive(entity)
 
-            // 2. Push to Supabase
-            val dto = archive.toDto()
-            supabaseClient.postgrest["arsip_keuangan"].upsert(dto)
+            try {
+                // 2. Push to Supabase
+                val dto = archive.toDto()
+                supabaseClient.postgrest["arsip_keuangan"].upsert(dto)
 
-            // 3. Update local status to SYNCED
-            archiveDao.insertArchive(entity.copy(syncStatus = "SYNCED"))
-
-            ResultState.Success(Unit)
+                // 3. Update local status to SYNCED
+                archiveDao.insertArchive(entity.copy(syncStatus = "SYNCED"))
+                ResultState.Success(Unit)
+            } catch (e: Exception) {
+                // Keep as DRAFT locally for later sync, but notify user
+                ResultState.Error("Gagal mengirim ke server (tersimpan sebagai draft lokal): ${e.message}")
+            }
         } catch (e: Exception) {
-            // Keep as DRAFT locally for later sync
-            ResultState.Error(e.message ?: "Failed to save archive to remote")
+            ResultState.Error("Gagal menyimpan data: ${e.message}")
         }
     }
 

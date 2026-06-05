@@ -73,7 +73,7 @@
     <string name="hint_year">YYYY</string>
     <string name="label_validity">Masa Berlaku</string>
     <string name="hint_year_format">YYYY</string>
-    <string name="hint_validity">DD/MM/YYYY</string>
+    <string name="hint_validity">DD-MM-YYYY</string>
     <string name="label_subject">Perihal</string>
     <string name="hint_subject">Deskripsi tentang dokumen...</string>
 

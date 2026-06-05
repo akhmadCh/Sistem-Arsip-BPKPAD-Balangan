@@ -44,12 +44,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.arsipbpkpad.R
 import com.example.arsipbpkpad.ui.theme.ArsipBPKPADTheme
+import com.example.arsipbpkpad.utils.DateVisualTransformation
 
 @Composable
 fun ManualAddScreen(
@@ -169,11 +171,22 @@ fun ManualAddContent(
                     label = stringResource(R.string.label_validity),
                     placeholder = "DD-MM-YYYY",
                     value = uiState.validity,
-                    onValueChange = { onEvent(ManualAddUiEvent.OnValidityChange(it)) },
+                    onValueChange = { if (it.length <= 8) onEvent(ManualAddUiEvent.OnValidityChange(it)) },
                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
                         keyboardType = androidx.compose.ui.text.input.KeyboardType.Number
                     ),
+                    visualTransformation = DateVisualTransformation(),
                     error = uiState.validationErrors["validity"]
+                )
+                FormTextField(
+                    label = "Nominal",
+                    placeholder = "e.x. 1000000",
+                    value = uiState.nominal,
+                    onValueChange = { onEvent(ManualAddUiEvent.OnNominalChange(it)) },
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                        keyboardType = androidx.compose.ui.text.input.KeyboardType.Number
+                    ),
+                    error = uiState.validationErrors["nominal"]
                 )
                 FormTextField(
                     label = stringResource(R.string.label_subject),
@@ -324,7 +337,8 @@ fun FormTextField(
     singleLine: Boolean = true,
     minLines: Int = 1,
     error: String? = null,
-    keyboardOptions: androidx.compose.foundation.text.KeyboardOptions = androidx.compose.foundation.text.KeyboardOptions.Default
+    keyboardOptions: androidx.compose.foundation.text.KeyboardOptions = androidx.compose.foundation.text.KeyboardOptions.Default,
+    visualTransformation: VisualTransformation = VisualTransformation.None
 ) {
     Column(modifier = Modifier.padding(bottom = 16.dp)) {
         Text(
@@ -349,6 +363,7 @@ fun FormTextField(
             minLines = minLines,
             isError = error != null,
             keyboardOptions = keyboardOptions,
+            visualTransformation = visualTransformation,
             shape = RoundedCornerShape(8.dp),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = MaterialTheme.colorScheme.primary,

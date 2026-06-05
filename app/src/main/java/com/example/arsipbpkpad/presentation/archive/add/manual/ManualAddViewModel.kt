@@ -25,6 +25,7 @@ data class ManualAddUiState(
     val department: String = "",
     val year: String = "",
     val validity: String = "",
+    val nominal: String = "",
     val subject: String = "",
     val warehouse: String = "",
     val rackNo: String = "",
@@ -42,6 +43,7 @@ sealed class ManualAddUiEvent {
     data class OnDepartmentChange(val value: String) : ManualAddUiEvent()
     data class OnYearChange(val value: String) : ManualAddUiEvent()
     data class OnValidityChange(val value: String) : ManualAddUiEvent()
+    data class OnNominalChange(val value: String) : ManualAddUiEvent()
     data class OnSubjectChange(val value: String) : ManualAddUiEvent()
     data class OnWarehouseChange(val value: String) : ManualAddUiEvent()
     data class OnRackNoChange(val value: String) : ManualAddUiEvent()
@@ -70,8 +72,12 @@ class ManualAddViewModel @Inject constructor(
             is ManualAddUiEvent.OnDepartmentChange -> _uiState.update { it.copy(department = event.value, validationErrors = it.validationErrors - "department") }
             is ManualAddUiEvent.OnYearChange -> _uiState.update { it.copy(year = event.value.filter { it.isDigit() }.take(4), validationErrors = it.validationErrors - "year") }
             is ManualAddUiEvent.OnValidityChange -> {
-                val formattedDate = formatAsDate(event.value)
-                _uiState.update { it.copy(validity = formattedDate, validationErrors = it.validationErrors - "validity") }
+                val digitsOnly = event.value.filter { it.isDigit() }.take(8)
+                _uiState.update { it.copy(validity = digitsOnly, validationErrors = it.validationErrors - "validity") }
+            }
+            is ManualAddUiEvent.OnNominalChange -> {
+                val digitsOnly = event.value.filter { it.isDigit() }
+                _uiState.update { it.copy(nominal = digitsOnly, validationErrors = it.validationErrors - "nominal") }
             }
             is ManualAddUiEvent.OnSubjectChange -> _uiState.update { it.copy(subject = event.value, validationErrors = it.validationErrors - "subject") }
             is ManualAddUiEvent.OnWarehouseChange -> _uiState.update { it.copy(warehouse = event.value, validationErrors = it.validationErrors - "warehouse") }
@@ -85,20 +91,12 @@ class ManualAddViewModel @Inject constructor(
         }
     }
 
-    private fun formatAsDate(input: String): String {
-        // Remove non-numeric characters
-        val digitsOnly = input.filter { it.isDigit() }
-        val sb = StringBuilder()
-        
-        for (i in digitsOnly.indices) {
-            sb.append(digitsOnly[i])
-            if ((i == 1 || i == 3) && i != digitsOnly.lastIndex) {
-                sb.append("-")
-            }
-        }
-        
-        // Limit to DD-MM-YYYY (10 characters)
-        return sb.toString().take(10)
+    private fun formatDigitsToDate(digits: String): String {
+        if (digits.length != 8) return digits
+        val day = digits.substring(0, 2)
+        val month = digits.substring(2, 4)
+        val year = digits.substring(4, 8)
+        return "$year-$month-$day"
     }
 
     private fun validateFields(state: ManualAddUiState): Map<String, String> {
@@ -107,16 +105,23 @@ class ManualAddViewModel @Inject constructor(
         if (state.docName.isBlank()) errors["docName"] = "Nama dokumen wajib diisi"
         if (state.docNumber.isBlank()) errors["docNumber"] = "Nomor dokumen wajib diisi"
         if (state.department.isBlank()) errors["department"] = "Dinas/Departemen wajib dipilih"
+        
         if (state.year.isBlank()) {
             errors["year"] = "Tahun wajib diisi"
         } else if (state.year.length != 4) {
             errors["year"] = "Tahun harus 4 digit"
         }
+        
         if (state.validity.isBlank()) {
             errors["validity"] = "Masa berlaku wajib diisi"
-        } else if (state.validity.length < 10) {
+        } else if (state.validity.length < 8) {
             errors["validity"] = "Format tanggal tidak lengkap (DD-MM-YYYY)"
         }
+
+        if (state.nominal.isBlank()) {
+            errors["nominal"] = "Nominal wajib diisi"
+        }
+
         if (state.subject.isBlank()) errors["subject"] = "Perihal wajib diisi"
         if (state.warehouse.isBlank()) errors["warehouse"] = "Gudang wajib dipilih"
         if (state.rackNo.isBlank()) errors["rackNo"] = "Nomor rak wajib diisi"
@@ -154,10 +159,10 @@ class ManualAddViewModel @Inject constructor(
                 id = UUID.randomUUID().toString(),
                 type = try { DocType.valueOf(currentState.docType) } catch(e: Exception) { DocType.SP2D },
                 documentNumber = currentState.docNumber,
-                nominal = null,
+                nominal = currentState.nominal.toDoubleOrNull(),
                 thirdParty = currentState.subject,
                 year = currentState.year.toIntOrNull() ?: 2024,
-                dateIssued = currentState.validity,
+                dateIssued = formatDigitsToDate(currentState.validity),
                 status = DocStatus.AVAILABLE,
                 idStorageLocation = null,
                 metadata = null,

@@ -47,6 +47,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -54,12 +55,14 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.arsipbpkpad.R
 import com.example.arsipbpkpad.ui.theme.ArsipBPKPADTheme
+import com.example.arsipbpkpad.utils.DateVisualTransformation
 
 // --- STATE & EVENTS ---
 data class ArchiveReviewUiState(
     val docNumber: String = "0982/SP2D/BPKPAD/2023",
     val subject: String = "Pembayaran Termin II Proyek Pembangunan Infrastruktur Jalan Raya Kecamatan ABC Tahun Anggaran 2023",
     val year: String = "2023",
+    val dateIssued: String = "",
     val warehouse: String = "Gudang A",
     val rack: String = "Rak-05-B",
     val isValidated: Boolean = false,
@@ -72,6 +75,7 @@ sealed class ArchiveReviewUiEvent {
     data class OnDocNumberChange(val value: String) : ArchiveReviewUiEvent()
     data class OnSubjectChange(val value: String) : ArchiveReviewUiEvent()
     data class OnYearChange(val value: String) : ArchiveReviewUiEvent()
+    data class OnDateIssuedChange(val value: String) : ArchiveReviewUiEvent()
     data class OnWarehouseChange(val value: String) : ArchiveReviewUiEvent()
     data class OnRackChange(val value: String) : ArchiveReviewUiEvent()
     data class OnValidationToggle(val isValidated: Boolean) : ArchiveReviewUiEvent()
@@ -243,10 +247,25 @@ fun ArchiveReviewContent(
                         minLines = 3
                     )
 
-                    ExtractionDropdownField(
+                    ExtractionTextField(
+                        label = stringResource(R.string.label_tanggal_dokumen),
+                        value = uiState.dateIssued,
+                        onValueChange = { if (it.length <= 8) onEvent(ArchiveReviewUiEvent.OnDateIssuedChange(it)) },
+                        placeholder = "DD-MM-YYYY",
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                            keyboardType = androidx.compose.ui.text.input.KeyboardType.Number
+                        ),
+                        visualTransformation = DateVisualTransformation()
+                    )
+
+                    ExtractionTextField(
                         label = stringResource(R.string.label_tahun_anggaran),
                         value = uiState.year,
-                        onValueChange = { onEvent(ArchiveReviewUiEvent.OnYearChange(it)) }
+                        onValueChange = { onEvent(ArchiveReviewUiEvent.OnYearChange(it)) },
+                        placeholder = "YYYY",
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                            keyboardType = androidx.compose.ui.text.input.KeyboardType.Number
+                        )
                     )
 
                     // Lokasi Fisik Row
@@ -335,9 +354,12 @@ fun ExtractionTextField(
     value: String,
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
+    placeholder: String = "",
     singleLine: Boolean = true,
     minLines: Int = 1,
-    error: String? = null
+    error: String? = null,
+    keyboardOptions: androidx.compose.foundation.text.KeyboardOptions = androidx.compose.foundation.text.KeyboardOptions.Default,
+    visualTransformation: VisualTransformation = VisualTransformation.None
 ) {
     Column(modifier = modifier.padding(bottom = 12.dp)) {
         if (label.isNotEmpty()) {
@@ -348,9 +370,14 @@ fun ExtractionTextField(
             value = value,
             onValueChange = onValueChange,
             modifier = Modifier.fillMaxWidth(),
+            placeholder = if (placeholder.isNotEmpty()) {
+                { Text(placeholder, fontSize = 13.sp, color = MaterialTheme.colorScheme.outline) }
+            } else null,
             singleLine = singleLine,
             minLines = minLines,
             isError = error != null,
+            keyboardOptions = keyboardOptions,
+            visualTransformation = visualTransformation,
             shape = RoundedCornerShape(8.dp),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = MaterialTheme.colorScheme.primary,

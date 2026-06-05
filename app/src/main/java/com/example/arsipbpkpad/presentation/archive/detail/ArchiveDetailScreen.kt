@@ -61,6 +61,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.arsipbpkpad.R
 import com.example.arsipbpkpad.presentation.components.BpkpadTopAppBar
 import com.example.arsipbpkpad.ui.theme.ArsipBPKPADTheme
+import com.example.arsipbpkpad.utils.DateUtils
 
 @Composable
 fun ArchiveDetailScreen(
@@ -192,7 +193,7 @@ fun ArchiveDetailContent(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = stringResource(R.string.uploaded_info, archive.dateIssued ?: "", "Admin"), 
+                        text = stringResource(R.string.uploaded_info, DateUtils.formatForDisplay(archive.dateIssued), "Admin"), 
                         style = MaterialTheme.typography.bodySmall, 
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -279,7 +280,7 @@ fun ArchiveDetailContent(
                         MetadataRow(label = stringResource(R.string.label_nama_dokumen), value = archive.documentNumber)
                         MetadataRow(label = stringResource(R.string.label_nomor_dokumen), value = archive.documentNumber)
                         MetadataRow(label = stringResource(R.string.label_dinas), value = archive.type.name)
-                        MetadataRow(label = stringResource(R.string.label_tanggal_dokumen), value = archive.dateIssued ?: "")
+                        MetadataRow(label = stringResource(R.string.label_tanggal_dokumen), value = DateUtils.formatForDisplay(archive.dateIssued))
                         MetadataRow(label = "Nominal", value = archive.nominal?.toString() ?: "0", showDivider = false)
                     }
 

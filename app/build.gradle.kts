@@ -87,5 +87,11 @@ dependencies {
     // Serialization
     implementation(libs.kotlinx.serialization.json)
 
+    testImplementation(libs.junit)
+    testImplementation(libs.mockk)
+    testImplementation(libs.kotlinx.coroutines.test)
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.espresso.core)
+
     debugImplementation(libs.androidx.compose.ui.tooling)
 }

@@ -33,6 +33,10 @@ class ArchiveReviewViewModel @Inject constructor(
             is ArchiveReviewUiEvent.OnYearChange -> _uiState.update { 
                 it.copy(year = event.value.filter { it.isDigit() }.take(4)) 
             }
+            is ArchiveReviewUiEvent.OnDateIssuedChange -> {
+                val digitsOnly = event.value.filter { it.isDigit() }.take(8)
+                _uiState.update { it.copy(dateIssued = digitsOnly) }
+            }
             is ArchiveReviewUiEvent.OnWarehouseChange -> _uiState.update { it.copy(warehouse = event.value) }
             is ArchiveReviewUiEvent.OnRackChange -> _uiState.update { it.copy(rack = event.value) }
             is ArchiveReviewUiEvent.OnValidationToggle -> _uiState.update { it.copy(isValidated = event.isValidated) }
@@ -41,6 +45,14 @@ class ArchiveReviewViewModel @Inject constructor(
                 it.copy(showSuccessDialog = false) 
             }
         }
+    }
+
+    private fun formatDigitsToDate(digits: String): String {
+        if (digits.length != 8) return digits
+        val day = digits.substring(0, 2)
+        val month = digits.substring(2, 4)
+        val year = digits.substring(4, 8)
+        return "$year-$month-$day"
     }
 
     private fun saveArchive() {
@@ -73,7 +85,7 @@ class ArchiveReviewViewModel @Inject constructor(
                 nominal = null,
                 thirdParty = currentState.subject,
                 year = currentState.year.toIntOrNull() ?: 2024,
-                dateIssued = null, 
+                dateIssued = formatDigitsToDate(currentState.dateIssued),
                 status = DocStatus.UNVERIFIED,
                 idStorageLocation = null,
                 metadata = null,
