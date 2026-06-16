@@ -1,6 +1,6 @@
 package com.example.arsipbpkpad.presentation.archive.add.manual
 
-import androidx.lifecycle.SavedStateHandle
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.arsipbpkpad.core.common.ResultState
@@ -10,6 +10,7 @@ import com.example.arsipbpkpad.domain.model.DocCondition
 import com.example.arsipbpkpad.domain.model.DocCopyType
 import com.example.arsipbpkpad.domain.model.DocStatus
 import com.example.arsipbpkpad.domain.model.DocType
+import com.example.arsipbpkpad.domain.model.ParsedMetadata
 import com.example.arsipbpkpad.domain.model.StagedBox
 import com.example.arsipbpkpad.domain.repository.ArchiveRepository
 import com.example.arsipbpkpad.domain.repository.StagingRepository
@@ -39,16 +40,11 @@ data class RapidInputUiState(
     val stagedDocuments: List<ArchiveDocument> = emptyList(),
     val existingStagedBoxes: List<StagedBox> = emptyList(),
     // Form fields
-    val docType: DocType = DocType.SP2D,
-    val copyType: DocCopyType = DocCopyType.ORIGINAL,
-    val copyCount: String = "1",
+    val docType: String = "SP2D",
+    val copyType: String = "ORIGINAL",
     val documentNumber: String = "",
-    val spmDocumentNumber: String = "",
+    val subject: String = "",
     val nominal: String = "",
-    val description: String = "",
-    val spjDescription: String = "",
-    val isAutoBundleEnabled: Boolean = false,
-    
     val isLoading: Boolean = false,
     val error: String? = null,
     val validationErrors: Map<String, String> = emptyMap(),
@@ -70,17 +66,13 @@ sealed class RapidInputUiEvent {
     data object OnConfirmBoxContext : RapidInputUiEvent()
 
     // Form
-    data class OnDocTypeChange(val value: DocType) : RapidInputUiEvent()
-    data class OnCopyTypeChange(val value: DocCopyType) : RapidInputUiEvent()
-    data class OnCopyCountChange(val value: String) : RapidInputUiEvent()
+    data class OnDocTypeChange(val value: String) : RapidInputUiEvent()
+    data class OnCopyTypeChange(val value: String) : RapidInputUiEvent()
     data class OnDocNumberChange(val value: String) : RapidInputUiEvent()
-    data class OnSpmDocNumberChange(val value: String) : RapidInputUiEvent()
+    data class OnSubjectChange(val value: String) : RapidInputUiEvent()
     data class OnNominalChange(val value: String) : RapidInputUiEvent()
-    data class OnDescriptionChange(val value: String) : RapidInputUiEvent()
-    data class OnSpjDescriptionChange(val value: String) : RapidInputUiEvent()
-    data class OnAutoBundleToggle(val enabled: Boolean) : RapidInputUiEvent()
-    
     data class OnAddToBoxClick(val forceSave: Boolean = false) : RapidInputUiEvent()
+    data class OnOcrResultReceived(val metadata: ParsedMetadata) : RapidInputUiEvent()
     data object DismissDuplicateWarning : RapidInputUiEvent()
 
     // Staging Actions
@@ -92,6 +84,7 @@ sealed class RapidInputUiEvent {
     data class OnDeleteBoxSession(val sessionId: String) : RapidInputUiEvent()
     data class OnConfirmUpload(val sessionId: String) : RapidInputUiEvent()
     data object OnConfirmAllUpload : RapidInputUiEvent()
+    data object OnHandledNavigation : RapidInputUiEvent()
 }
 
 @HiltViewModel
@@ -99,7 +92,7 @@ class RapidInputViewModel @Inject constructor(
     private val stagingRepository: StagingRepository,
     private val archiveRepository: ArchiveRepository,
     private val bulkInsertArchivesUseCase: BulkInsertArchivesUseCase,
-    private val savedStateHandle: SavedStateHandle
+    private val savedStateHandle: androidx.lifecycle.SavedStateHandle
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(RapidInputUiState())
@@ -109,29 +102,32 @@ class RapidInputViewModel @Inject constructor(
     val navigationEvent = _navigationEvent.asSharedFlow()
 
     private var stagingJob: kotlinx.coroutines.Job? = null
-    
-    private val boxSessionId: String? = savedStateHandle["sessionId"]
 
     init {
+        Log.e("RapidInputVM", "ViewModel created! Instance: ${this.hashCode()}")
         observeAllStaging()
+        
+        // Handle initial session if passed
+        val boxSessionId: String? = savedStateHandle["sessionId"]
         boxSessionId?.let { sessionId ->
             onEvent(RapidInputUiEvent.SetCurrentSession(sessionId))
         }
-        observeOcrResults()
     }
 
-    private fun observeOcrResults() {
-        viewModelScope.launch {
-            savedStateHandle.getStateFlow<com.example.arsipbpkpad.domain.usecase.ParsedMetadata?>("ocr_result", null)
-                .collect { metadata ->
-                    if (metadata != null) {
-                        _uiState.update { it.copy(
-                            documentNumber = metadata.docNumber ?: it.documentNumber,
-                            docType = metadata.docType
-                        ) }
-                        savedStateHandle["ocr_result"] = null
-                    }
+    private fun handleOcrResult(metadata: ParsedMetadata) {
+        Log.e("RapidInputVM", "EVENT: handleOcrResult called with $metadata")
+        _uiState.update { state ->
+            state.copy(
+                documentNumber = metadata.docNumber ?: state.documentNumber,
+                subject = metadata.subject ?: state.subject,
+                docType = metadata.docType ?: state.docType,
+                nominal = metadata.nominal?.toLong()?.toString() ?: state.nominal,
+                boxContext = if (state.boxContext.year.isBlank() && metadata.year != null) {
+                    state.boxContext.copy(year = metadata.year.toString())
+                } else {
+                    state.boxContext
                 }
+            )
         }
     }
 
@@ -146,6 +142,7 @@ class RapidInputViewModel @Inject constructor(
     private fun observeSessionStaging(sessionId: String) {
         stagingJob?.cancel()
         stagingJob = viewModelScope.launch {
+            // Fetch box metadata first
             val box = stagingRepository.getStagedBoxById(sessionId)
             if (box != null) {
                 _uiState.update { it.copy(
@@ -190,30 +187,14 @@ class RapidInputViewModel @Inject constructor(
             is RapidInputUiEvent.OnYearChange -> _uiState.update { it.copy(boxContext = it.boxContext.copy(year = event.value)) }
             is RapidInputUiEvent.OnConfirmBoxContext -> validateBoxContext()
             
-            is RapidInputUiEvent.OnDocTypeChange -> {
-                val isSp2d = event.value == DocType.SP2D
-                _uiState.update { it.copy(
-                    docType = event.value,
-                    isAutoBundleEnabled = if (isSp2d) it.isAutoBundleEnabled else false
-                ) }
-            }
-            is RapidInputUiEvent.OnCopyTypeChange -> {
-                val newCount = if (event.value == DocCopyType.ORIGINAL) "1" else _uiState.value.copyCount
-                _uiState.update { it.copy(copyType = event.value, copyCount = newCount) }
-            }
-            is RapidInputUiEvent.OnCopyCountChange -> {
-                if (_uiState.value.copyType == DocCopyType.COPY) {
-                    _uiState.update { it.copy(copyCount = event.value) }
-                }
-            }
+            is RapidInputUiEvent.OnDocTypeChange -> _uiState.update { it.copy(docType = event.value) }
+            is RapidInputUiEvent.OnCopyTypeChange -> _uiState.update { it.copy(copyType = event.value) }
             is RapidInputUiEvent.OnDocNumberChange -> _uiState.update { it.copy(documentNumber = event.value) }
-            is RapidInputUiEvent.OnSpmDocNumberChange -> _uiState.update { it.copy(spmDocumentNumber = event.value) }
+            is RapidInputUiEvent.OnSubjectChange -> _uiState.update { it.copy(subject = event.value) }
             is RapidInputUiEvent.OnNominalChange -> _uiState.update { it.copy(nominal = event.value) }
-            is RapidInputUiEvent.OnDescriptionChange -> _uiState.update { it.copy(description = event.value) }
-            is RapidInputUiEvent.OnSpjDescriptionChange -> _uiState.update { it.copy(spjDescription = event.value) }
-            is RapidInputUiEvent.OnAutoBundleToggle -> _uiState.update { it.copy(isAutoBundleEnabled = event.enabled) }
             
             is RapidInputUiEvent.OnAddToBoxClick -> addToStaging(event.forceSave)
+            is RapidInputUiEvent.OnOcrResultReceived -> handleOcrResult(event.metadata)
             is RapidInputUiEvent.DismissDuplicateWarning -> _uiState.update { it.copy(showDuplicateWarning = false) }
             
             is RapidInputUiEvent.OnDeleteStagedDoc -> deleteFromStaging(event.id)
@@ -221,6 +202,7 @@ class RapidInputViewModel @Inject constructor(
             is RapidInputUiEvent.OnConfirmUpload -> executeBulkUpload(event.sessionId)
             is RapidInputUiEvent.OnConfirmAllUpload -> uploadAllBoxes()
             is RapidInputUiEvent.OnDeleteBoxSession -> deleteBoxSession(event.sessionId)
+            is RapidInputUiEvent.OnHandledNavigation -> { /* Using SharedFlow */ }
             is RapidInputUiEvent.ResetState -> _uiState.value = RapidInputUiState()
         }
     }
@@ -271,35 +253,15 @@ class RapidInputViewModel @Inject constructor(
             val sessionId = state.currentSessionId ?: return@launch
             
             val errors = mutableMapOf<String, String>()
-            
-            // Validation based on Type and Bundle
-            if (state.isAutoBundleEnabled && state.docType == DocType.SP2D) {
-                if (state.documentNumber.isBlank()) errors["docNumber"] = "Nomor SP2D wajib diisi"
-                if (state.spmDocumentNumber.isBlank()) errors["spmDocNumber"] = "Nomor SPM wajib diisi"
-                if (state.description.isBlank()) errors["description"] = "Uraian wajib diisi"
-                if (state.spjDescription.isBlank()) errors["spjDescription"] = "Uraian SPJ wajib diisi"
-            } else {
-                if (state.docType != DocType.SPJ && state.documentNumber.isBlank()) {
-                    errors["docNumber"] = "Nomor dokumen wajib diisi"
-                }
-                if (state.description.isBlank()) errors["description"] = "Uraian wajib diisi"
-            }
-            
-            val count = state.copyCount.toIntOrNull() ?: 0
-            if (state.copyType == DocCopyType.COPY && count < 1) {
-                errors["copyCount"] = "Jumlah salinan minimal 1"
-            }
+            if (state.documentNumber.isBlank()) errors["docNumber"] = "Wajib diisi"
+            if (state.subject.isBlank()) errors["subject"] = "Wajib diisi"
             
             if (errors.isNotEmpty()) {
                 _uiState.update { it.copy(validationErrors = errors) }
                 return@launch
             }
 
-            // Exact duplicate check
-            val exactExists = archiveRepository.checkDocumentNumberAndTypeExists(
-                state.documentNumber, 
-                state.copyType.name
-            )
+            val exactExists = archiveRepository.checkDocumentNumberAndTypeExists(state.documentNumber, state.copyType)
             if (exactExists && state.editingId == null) {
                 _uiState.update { it.copy(error = "Nomor dokumen ini sudah ada dengan status yang sama.") }
                 return@launch
@@ -314,64 +276,37 @@ class RapidInputViewModel @Inject constructor(
             }
 
             val docYear = state.boxContext.year.toIntOrNull() ?: 2026
-            val sharedNominal = state.nominal.toDoubleOrNull()
+            val doc = ArchiveDocument(
+                id = state.editingId ?: UUID.randomUUID().toString(),
+                boxSessionId = sessionId,
+                type = DocType.valueOf(state.docType),
+                documentNumber = state.documentNumber,
+                copyType = DocCopyType.valueOf(state.copyType),
+                copyCount = if (state.copyType == "ORIGINAL") 1 else 1,
+                description = state.subject,
+                nominal = state.nominal.toDoubleOrNull(),
+                year = docYear,
+                condition = DocCondition.GOOD,
+                status = DocStatus.UNVERIFIED,
+                metadata = ArchiveMetadata(
+                    warehouse = state.boxContext.warehouse,
+                    rack = state.boxContext.rack,
+                    boxNumber = state.boxContext.box
+                ),
+                idStorageLocation = null,
+                bundleId = null,
+                createdBy = null,
+                verifiedBy = null,
+                createdAt = null,
+                updatedAt = null
+            )
+
+            stagingRepository.insertToStaging(doc)
             
-            if (state.isAutoBundleEnabled && state.docType == DocType.SP2D && state.editingId == null) {
-                // Auto-Bundle Logic: Create SP2D, SPM, SPJ
-                val bundleId = UUID.randomUUID().toString()
-                val types = listOf(DocType.SPM, DocType.SP2D, DocType.SPJ)
-                
-                types.forEach { type ->
-                    val docNum = when (type) {
-                        DocType.SP2D -> state.documentNumber
-                        DocType.SPM -> state.spmDocumentNumber
-                        else -> null 
-                    }
-                    
-                    val docDesc = when (type) {
-                        DocType.SPJ -> state.spjDescription
-                        else -> state.description
-                    }
-                    
-                    val doc = createArchiveDocument(
-                        id = UUID.randomUUID().toString(),
-                        sessionId = sessionId,
-                        type = type,
-                        docNumber = docNum,
-                        copyType = state.copyType,
-                        copyCount = count,
-                        nominal = sharedNominal,
-                        year = docYear,
-                        bundleId = bundleId,
-                        description = docDesc
-                    )
-                    stagingRepository.insertToStaging(doc)
-                }
-            } else {
-                // Single Entry
-                val doc = createArchiveDocument(
-                    id = state.editingId ?: UUID.randomUUID().toString(),
-                    sessionId = sessionId,
-                    type = state.docType,
-                    docNumber = if (state.docType == DocType.SPJ) null else state.documentNumber,
-                    copyType = state.copyType,
-                    copyCount = count,
-                    nominal = sharedNominal,
-                    year = docYear,
-                    bundleId = null,
-                    description = state.description
-                )
-                stagingRepository.insertToStaging(doc)
-            }
-            
-            // Reset form
             _uiState.update { it.copy(
                 documentNumber = "",
-                spmDocumentNumber = "",
+                subject = "",
                 nominal = "",
-                description = "",
-                spjDescription = "",
-                isAutoBundleEnabled = false,
                 editingId = null,
                 validationErrors = emptyMap(),
                 error = null,
@@ -379,42 +314,6 @@ class RapidInputViewModel @Inject constructor(
             ) }
         }
     }
-
-    private fun createArchiveDocument(
-        id: String,
-        sessionId: String,
-        type: DocType,
-        docNumber: String?,
-        copyType: DocCopyType,
-        copyCount: Int,
-        nominal: Double?,
-        year: Int,
-        bundleId: String?,
-        description: String? = null
-    ) = ArchiveDocument(
-        id = id,
-        boxSessionId = sessionId,
-        type = type,
-        documentNumber = docNumber,
-        copyType = copyType,
-        copyCount = copyCount,
-        nominal = nominal,
-        description = description,
-        year = year,
-        condition = DocCondition.GOOD,
-        status = DocStatus.UNVERIFIED,
-        idStorageLocation = null,
-        metadata = ArchiveMetadata(
-            warehouse = _uiState.value.boxContext.warehouse,
-            rack = _uiState.value.boxContext.rack,
-            boxNumber = _uiState.value.boxContext.box
-        ),
-        bundleId = bundleId,
-        createdBy = null,
-        verifiedBy = null,
-        createdAt = null,
-        updatedAt = null
-    )
 
     private fun deleteFromStaging(id: String) {
         viewModelScope.launch {
@@ -425,13 +324,11 @@ class RapidInputViewModel @Inject constructor(
     private fun startEditing(doc: ArchiveDocument) {
         _uiState.update { it.copy(
             editingId = doc.id,
-            docType = doc.type,
-            copyType = doc.copyType,
-            copyCount = doc.copyCount.toString(),
+            docType = doc.type.name,
+            copyType = doc.copyType.name,
             documentNumber = doc.documentNumber ?: "",
-            nominal = doc.nominal?.toString() ?: "",
-            description = doc.description ?: "",
-            isAutoBundleEnabled = false // Auto-bundle disabled when editing single doc
+            subject = doc.description ?: "",
+            nominal = doc.nominal?.toString() ?: ""
         ) }
     }
 

@@ -1,7 +1,9 @@
 package com.example.arsipbpkpad.di
 
+import com.example.arsipbpkpad.data.repository.AiParserRepositoryImpl
 import com.example.arsipbpkpad.data.repository.ArchiveRepositoryImpl
 import com.example.arsipbpkpad.data.repository.StagingRepositoryImpl
+import com.example.arsipbpkpad.domain.repository.AiParserRepository
 import com.example.arsipbpkpad.domain.repository.ArchiveRepository
 import com.example.arsipbpkpad.domain.repository.StagingRepository
 import dagger.Binds
@@ -24,4 +26,10 @@ abstract class RepositoryModule {
     abstract fun bindStagingRepository(
         stagingRepositoryImpl: StagingRepositoryImpl
     ): StagingRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindAiParserRepository(
+        aiParserRepositoryImpl: AiParserRepositoryImpl
+    ): AiParserRepository
 }

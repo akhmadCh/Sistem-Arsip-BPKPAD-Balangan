@@ -1,6 +1,6 @@
 package com.example.arsipbpkpad.presentation.scan
 
-import com.example.arsipbpkpad.domain.usecase.ParsedMetadata
+import com.example.arsipbpkpad.domain.model.ParsedMetadata
 
 data class ScanUiState(
     val isLoading: Boolean = false,

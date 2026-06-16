@@ -31,6 +31,7 @@ import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.arsipbpkpad.R
+import com.example.arsipbpkpad.domain.model.ParsedMetadata
 import com.example.arsipbpkpad.presentation.components.BpkpadTopAppBar
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
@@ -44,14 +45,16 @@ import java.util.concurrent.Executor
 @Composable
 fun ScanScreen(
     onNavigateBack: () -> Unit,
-    onResultDispatched: (com.example.arsipbpkpad.domain.usecase.ParsedMetadata) -> Unit,
+    onResultDispatched: (ParsedMetadata) -> Unit,
     viewModel: ScanViewModel = hiltViewModel()
 ) {
+    Log.d("ScanScreen", "ScanScreen Composable entered")
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val cameraPermissionState = rememberPermissionState(Manifest.permission.CAMERA)
     val context = LocalContext.current
 
     LaunchedEffect(Unit) {
+        Log.d("ScanScreen", "ScanScreen LaunchedEffect triggered")
         if (!cameraPermissionState.status.isGranted) {
             cameraPermissionState.launchPermissionRequest()
         }
@@ -178,20 +181,24 @@ fun CameraPreview(
         ) {
             IconButton(
                 onClick = {
-                    val outputOptions = ImageCapture.OutputFileOptions.Builder(
-                        File(context.cacheDir, "scan_${System.currentTimeMillis()}.jpg")
-                    ).build()
+                    Log.d("ScanScreen", "Capture button clicked")
+                    val file = File(context.cacheDir, "scan_${System.currentTimeMillis()}.jpg")
+                    Log.d("ScanScreen", "Saving to: ${file.absolutePath}")
+                    
+                    val outputOptions = ImageCapture.OutputFileOptions.Builder(file).build()
 
                     imageCapture.takePicture(
                         outputOptions,
                         ContextCompat.getMainExecutor(context),
                         object : ImageCapture.OnImageSavedCallback {
                             override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
-                                outputFileResults.savedUri?.let { onImageCaptured(it) }
+                                val uri = outputFileResults.savedUri ?: Uri.fromFile(file)
+                                Log.d("ScanScreen", "Image saved successfully: $uri")
+                                onImageCaptured(uri)
                             }
 
                             override fun onError(exception: ImageCaptureException) {
-                                Log.e("CameraPreview", "Image capture failed", exception)
+                                Log.e("ScanScreen", "Image capture failed: ${exception.message}", exception)
                             }
                         }
                     )

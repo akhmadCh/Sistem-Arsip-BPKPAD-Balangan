@@ -1,9 +1,12 @@
 package com.example.arsipbpkpad.presentation.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -11,12 +14,14 @@ import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import com.example.arsipbpkpad.presentation.analytics.AnalyticsScreen
 import com.example.arsipbpkpad.presentation.archive.add.manual.RapidInputScreen
+import com.example.arsipbpkpad.presentation.archive.add.manual.RapidInputUiEvent
 import com.example.arsipbpkpad.presentation.archive.add.manual.RapidInputViewModel
 import com.example.arsipbpkpad.presentation.archive.add.manual.StagingBoxListScreen
 import com.example.arsipbpkpad.presentation.archive.detail.ArchiveDetailScreen
 import com.example.arsipbpkpad.presentation.archive.list.ArchiveListScreen
 import com.example.arsipbpkpad.presentation.home.screen.HomeScreen
 import com.example.arsipbpkpad.presentation.scan.ScanScreen
+import com.example.arsipbpkpad.presentation.components.BottomNavItem
 
 @Composable
 fun AppNavHost(
@@ -72,7 +77,7 @@ fun AppNavHost(
                         navController.navigate(Screen.Scan.route)
                     },
                     onNavigateBack = { navController.popBackStack() },
-                    onNavigateToBottomNav = { item ->
+                    onNavigateToBottomNav = { item: BottomNavItem ->
                         when (item.route) {
                             "home" -> navController.navigate(Screen.Home.route) {
                                 popUpTo(Screen.Home.route) { inclusive = true }
@@ -95,7 +100,7 @@ fun AppNavHost(
                         navController.navigate(Screen.RapidInput.createRoute(sessionId))
                     },
                     onNavigateBack = { navController.popBackStack() },
-                    onNavigateToBottomNav = { item ->
+                    onNavigateToBottomNav = { item: BottomNavItem ->
                         when (item.route) {
                             "home" -> navController.navigate(Screen.Home.route) {
                                 popUpTo(Screen.Home.route) { inclusive = true }
@@ -114,13 +119,33 @@ fun AppNavHost(
                 val sessionId = entry.arguments?.getString("sessionId") ?: ""
                 val flowEntry = remember(entry) { navController.getBackStackEntry("archive_flow") }
                 val rapidViewModel: RapidInputViewModel = hiltViewModel(flowEntry)
+                
+                // Observe OCR results from multiple possible handles
+                val ocrResult by entry.savedStateHandle.getStateFlow<com.example.arsipbpkpad.domain.model.ParsedMetadata?>("ocr_result", null).collectAsStateWithLifecycle()
+                val flowOcrResult by flowEntry.savedStateHandle.getStateFlow<com.example.arsipbpkpad.domain.model.ParsedMetadata?>("ocr_result", null).collectAsStateWithLifecycle()
+
+                LaunchedEffect(ocrResult) {
+                    ocrResult?.let {
+                        android.util.Log.e("AppNavHost", "UI: OCR result detected on entry handle: $it")
+                        rapidViewModel.onEvent(RapidInputUiEvent.OnOcrResultReceived(it))
+                        entry.savedStateHandle["ocr_result"] = null
+                    }
+                }
+                
+                LaunchedEffect(flowOcrResult) {
+                    flowOcrResult?.let {
+                        android.util.Log.e("AppNavHost", "UI: OCR result detected on flow handle: $it")
+                        rapidViewModel.onEvent(RapidInputUiEvent.OnOcrResultReceived(it))
+                        flowEntry.savedStateHandle["ocr_result"] = null
+                    }
+                }
 
                 RapidInputScreen(
                     sessionId = sessionId,
                     onNavigateBack = { navController.popBackStack() },
                     onNavigateToScan = { navController.navigate(Screen.Scan.route) },
                     viewModel = rapidViewModel,
-                    onNavigateToBottomNav = { item ->
+                    onNavigateToBottomNav = { item: BottomNavItem ->
                         when (item.route) {
                             "home" -> navController.navigate(Screen.Home.route) {
                                 popUpTo(Screen.Home.route) { inclusive = true }
@@ -145,10 +170,28 @@ fun AppNavHost(
         }
 
         composable(Screen.Scan.route) {
+            android.util.Log.e("AppNavHost", "NAV: Navigating to Scan Screen")
             ScanScreen(
                 onNavigateBack = { navController.popBackStack() },
                 onResultDispatched = { metadata ->
+                    android.util.Log.e("AppNavHost", "NAV: Result received from Scan: $metadata")
+                    
+                    // Set on BOTH possible locations to be 100% sure
                     navController.previousBackStackEntry?.savedStateHandle?.set("ocr_result", metadata)
+                    
+                    try {
+                        val flowEntry = navController.getBackStackEntry("archive_flow")
+                        flowEntry.savedStateHandle.set("ocr_result", metadata)
+                        android.util.Log.e("AppNavHost", "NAV: Result set on archive_flow handle")
+                    } catch (e: Exception) {
+                        android.util.Log.e("AppNavHost", "NAV: archive_flow not found")
+                    }
+
+                    // ALSO try setting it on the specific RapidInput destination entry if visible
+                    try {
+                        navController.getBackStackEntry(Screen.RapidInput.route)?.savedStateHandle?.set("ocr_result", metadata)
+                    } catch (e: Exception) {}
+
                     navController.popBackStack()
                 }
             )
