@@ -118,20 +118,13 @@ fun HomeContent(
 
             if (uiState.activeStagingBoxes.isNotEmpty()) {
                 item {
-                    Text(
-                        text = "Staging Status",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                }
-                
-                // Show all boxes instead of using LazyRow for better visibility if they are few
-                items(uiState.activeStagingBoxes) { box ->
+                    val totalDocs = uiState.activeStagingBoxes.sumOf { it.itemCount }
+                    val totalBoxes = uiState.activeStagingBoxes.size
+
                     StagingStatusCard(
-                        count = box.itemCount,
-                        summary = "Box ${box.box} (${box.year})",
-                        onClick = { onNavigateToRapidInput(box.sessionId) },
+                        count = totalDocs,
+                        summary = "$totalBoxes box siap di staging",
+                        onClick = onNavigateToStagingBoxList,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
                 }
@@ -229,7 +222,7 @@ fun StagingStatusCard(
         modifier = modifier
             .fillMaxWidth()
             .clickable { onClick() },
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
         shape = RoundedCornerShape(24.dp),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.secondary.copy(alpha = 0.2f))
     ) {
@@ -243,7 +236,7 @@ fun StagingStatusCard(
                     Icon(
                         imageVector = Icons.Default.Refresh,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.secondary,
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(24.dp)
                     )
                     Spacer(modifier = Modifier.width(12.dp))
@@ -269,13 +262,13 @@ fun StagingStatusCard(
                 Box(
                     modifier = Modifier
                         .size(48.dp)
-                        .background(MaterialTheme.colorScheme.secondary, CircleShape),
+                        .background(MaterialTheme.colorScheme.primary, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.List,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSecondary,
+                        tint = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier.size(24.dp)
                     )
                 }
@@ -286,12 +279,13 @@ fun StagingStatusCard(
                     Text(
                         text = "$count dokumen di staging",
                         style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
                     )
                     Text(
                         text = summary,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
                     )
                 }
             }

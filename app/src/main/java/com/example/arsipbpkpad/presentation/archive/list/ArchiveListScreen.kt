@@ -47,8 +47,6 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -472,24 +470,7 @@ fun FilterContent(
 ) {
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.CheckCircle,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(28.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = stringResource(R.string.app_name_full),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                },
+            com.example.arsipbpkpad.presentation.components.BpkpadTopAppBar(
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
@@ -517,10 +498,10 @@ fun FilterContent(
                         }
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
+                containerColor = Color.Transparent
             )
         },
-        containerColor = Color(0xFFF3FAFF) // Soft blue background like mockup
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -536,7 +517,7 @@ fun FilterContent(
             Box(
                 modifier = Modifier
                     .size(64.dp)
-                    .background(Color(0xFF2E7D32), CircleShape),
+                    .background(MaterialTheme.colorScheme.primary, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -569,7 +550,7 @@ fun FilterContent(
             // Selection Card
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 shape = RoundedCornerShape(24.dp),
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
             ) {
@@ -657,8 +638,8 @@ fun FilterContent(
                     .fillMaxWidth()
                     .height(56.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF1B5E20),
-                    disabledContainerColor = Color(0xFFBDBDBD)
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    disabledContainerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
                 ),
                 shape = RoundedCornerShape(28.dp)
             ) {
@@ -685,7 +666,7 @@ fun YearItem(
 ) {
     Row(
         modifier = modifier
-            .border(1.dp, Color(0xFFE0E0E0), RoundedCornerShape(24.dp))
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(24.dp))
             .clip(RoundedCornerShape(24.dp))
             .clickable { onClick() }
             .padding(horizontal = 16.dp, vertical = 12.dp),
@@ -696,20 +677,20 @@ fun YearItem(
             text = year.toString(),
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.Medium,
-            color = Color(0xFF424242)
+            color = MaterialTheme.colorScheme.onSurface
         )
         if (isSelected) {
             Icon(
                 imageVector = Icons.Default.CheckCircle,
                 contentDescription = null,
-                tint = Color(0xFF2E7D32),
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(20.dp)
             )
         } else {
             Box(
                 modifier = Modifier
                     .size(20.dp)
-                    .border(1.dp, Color.LightGray, CircleShape)
+                    .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape)
             )
         }
     }
@@ -723,20 +704,20 @@ fun FilterSummaryBox(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color(0xFFE8F5E9), RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.secondaryContainer, RoundedCornerShape(16.dp))
             .padding(16.dp),
         verticalAlignment = Alignment.Top
     ) {
         Box(
             modifier = Modifier
                 .size(36.dp)
-                .background(Color(0xFF2E7D32), CircleShape),
+                .background(MaterialTheme.colorScheme.primary, CircleShape),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = Icons.Default.Info,
                 contentDescription = null,
-                tint = Color.White,
+                tint = MaterialTheme.colorScheme.onPrimary,
                 modifier = Modifier.size(18.dp)
             )
         }
@@ -748,14 +729,14 @@ fun FilterSummaryBox(
                 text = "Ringkasan Filter",
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF1B5E20)
+                color = MaterialTheme.colorScheme.onSecondaryContainer
             )
             Spacer(modifier = Modifier.height(4.dp))
             val yearsText = if (selectedYears.isEmpty()) "-" else selectedYears.sortedDescending().joinToString(", ")
             Text(
                 text = "${selectedYears.size} Tahun terpilih ($yearsText) untuk tipe $selectedType.",
                 style = MaterialTheme.typography.labelSmall,
-                color = Color(0xFF424242),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 lineHeight = 16.sp
             )
         }
@@ -849,7 +830,9 @@ fun FormTextField(
     value: String,
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
-    error: String? = null
+    error: String? = null,
+    keyboardOptions: androidx.compose.foundation.text.KeyboardOptions = androidx.compose.foundation.text.KeyboardOptions.Default,
+    visualTransformation: androidx.compose.ui.text.input.VisualTransformation = androidx.compose.ui.text.input.VisualTransformation.None
 ) {
     Column(modifier = modifier) {
         Text(text = label, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
@@ -860,9 +843,11 @@ fun FormTextField(
             modifier = Modifier.fillMaxWidth(),
             isError = error != null,
             shape = RoundedCornerShape(12.dp),
+            keyboardOptions = keyboardOptions,
+            visualTransformation = visualTransformation,
             colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = Color(0xFFF9F9F9),
-                unfocusedContainerColor = Color(0xFFF9F9F9)
+                focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
             )
         )
         error?.let {

@@ -22,9 +22,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -43,7 +43,6 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -64,8 +63,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.arsipbpkpad.R
 import com.example.arsipbpkpad.domain.model.StagedBox
 import com.example.arsipbpkpad.presentation.archive.list.FormTextField
-import com.example.arsipbpkpad.presentation.components.BpkpadBottomNavigation
-import com.example.arsipbpkpad.presentation.components.BottomNavItem
+import com.example.arsipbpkpad.presentation.components.BpkpadTopAppBar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -73,34 +71,87 @@ fun StagingBoxListScreen(
     viewModel: RapidInputViewModel,
     onNavigateToRapidInput: (String) -> Unit,
     onNavigateBack: () -> Unit,
-    onNavigateToBottomNav: (BottomNavItem) -> Unit
+    onNavigateToBottomNav: (com.example.arsipbpkpad.presentation.components.BottomNavItem) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showAddBoxDialog by remember { mutableStateOf(false) }
+    var boxToDelete by remember { mutableStateOf<String?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
 
-    LaunchedEffect(viewModel.navigationEvent) {
+    LaunchedEffect(Unit) {
         viewModel.navigationEvent.collect { sessionId ->
+            showAddBoxDialog = false 
             onNavigateToRapidInput(sessionId)
-            showAddBoxDialog = false
+        }
+    }
+
+    LaunchedEffect(uiState.isUploadSuccess, uiState.error) {
+        if (uiState.isUploadSuccess) {
+            snackbarHostState.showSnackbar("Berhasil diunggah ke database!")
+            viewModel.onEvent(RapidInputUiEvent.ResetState)
+        } else if (uiState.error != null) {
+            snackbarHostState.showSnackbar("Error: ${uiState.error}")
         }
     }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            TopAppBar(
-                title = { Text("Staging Antrian Box", fontWeight = FontWeight.Bold) },
+            BpkpadTopAppBar(
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Kembali")
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.back),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFF1B5E20),
-                    titleContentColor = Color.White,
-                    navigationIconContentColor = Color.White
-                )
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        androidx.compose.foundation.Image(
+                            painter = androidx.compose.ui.res.painterResource(id = R.drawable.logo_balangan),
+                            contentDescription = null,
+                            modifier = Modifier.size(32.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Staging Status",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                },
+                actions = {
+                    TextButton(
+                        onClick = { 
+                            if (!uiState.isLoading && uiState.existingStagedBoxes.isNotEmpty()) {
+                                viewModel.onEvent(RapidInputUiEvent.OnConfirmAllUpload)
+                            }
+                        },
+                        enabled = !uiState.isLoading && uiState.existingStagedBoxes.isNotEmpty()
+                    ) {
+                        Text(
+                            text = if (uiState.isLoading) "Processing..." else "Push All to\nDatabase",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = if (uiState.existingStagedBoxes.isNotEmpty() && !uiState.isLoading) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
+                            textAlign = TextAlign.End
+                        )
+                    }
+                    IconButton(
+                        onClick = { viewModel.onEvent(RapidInputUiEvent.TriggerSync) },
+                        enabled = !uiState.isLoading
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = "Sync Drafts",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                },
+                containerColor = Color.Transparent
             )
         },
         floatingActionButton = {
@@ -109,20 +160,20 @@ fun StagingBoxListScreen(
                     viewModel.onEvent(RapidInputUiEvent.CreateNewSession)
                     showAddBoxDialog = true 
                 },
-                containerColor = Color(0xFF1B5E20),
-                contentColor = Color.White,
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
                 shape = CircleShape
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Tambah Box")
             }
         },
         bottomBar = {
-            BpkpadBottomNavigation(
-                currentRoute = BottomNavItem.ADD.route,
+            com.example.arsipbpkpad.presentation.components.BpkpadBottomNavigation(
+                currentRoute = com.example.arsipbpkpad.presentation.components.BottomNavItem.ADD.route,
                 onNavigate = onNavigateToBottomNav
             )
         },
-        containerColor = Color(0xFFE1F5FE) 
+        containerColor = MaterialTheme.colorScheme.surface 
     ) { paddingValues ->
         Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
             if (uiState.existingStagedBoxes.isEmpty()) {
@@ -137,94 +188,125 @@ fun StagingBoxListScreen(
                         items(uiState.existingStagedBoxes) { box ->
                             DashboardStagedBoxCard(
                                 box = box,
-                                onClick = { onNavigateToRapidInput(box.sessionId) },
-                                onDelete = { viewModel.onEvent(RapidInputUiEvent.OnDeleteBoxSession(box.sessionId)) }
+                                onContinue = { 
+                                    viewModel.onEvent(RapidInputUiEvent.SetCurrentSession(box.sessionId))
+                                    onNavigateToRapidInput(box.sessionId) 
+                                },
+                                onDelete = { boxToDelete = box.sessionId }
                             )
                         }
                     }
-                    
+
                     DashboardSummary(uiState = uiState)
                 }
             }
 
-            if (showAddBoxDialog) {
-                AddBoxDialog(
-                    uiState = uiState,
-                    onDismiss = { showAddBoxDialog = false },
-                    onConfirm = { viewModel.onEvent(RapidInputUiEvent.OnConfirmBoxContext) },
-                    onWarehouseChange = { viewModel.onEvent(RapidInputUiEvent.OnWarehouseChange(it)) },
-                    onRackChange = { viewModel.onEvent(RapidInputUiEvent.OnRackChange(it)) },
-                    onBoxChange = { viewModel.onEvent(RapidInputUiEvent.OnBoxChange(it)) },
-                    onYearChange = { viewModel.onEvent(RapidInputUiEvent.OnYearChange(it)) }
+            if (boxToDelete != null) {
+                AlertDialog(
+                    onDismissRequest = { boxToDelete = null },
+                    title = { Text("Hapus Staging Box") },
+                    text = { Text("Apakah Anda yakin ingin menghapus box ini dari staging? Data dokumen di dalamnya akan hilang.") },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                boxToDelete?.let { viewModel.onEvent(RapidInputUiEvent.OnDeleteBoxSession(it)) }
+                                boxToDelete = null
+                            },
+                            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                        ) {
+                            Text("Hapus")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { boxToDelete = null }) {
+                            Text("Batal")
+                        }
+                    }
                 )
             }
+
+            if (uiState.isLoading) {
+                Box(
+                    modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                }
+            }
         }
+    }
+
+    if (showAddBoxDialog) {
+        AddBoxDialog(
+            uiState = uiState,
+            onDismiss = { showAddBoxDialog = false },
+            onConfirm = {
+                viewModel.onEvent(RapidInputUiEvent.OnConfirmBoxContext)
+            },
+            onWarehouseChange = { viewModel.onEvent(RapidInputUiEvent.OnWarehouseChange(it)) },
+            onRackChange = { viewModel.onEvent(RapidInputUiEvent.OnRackChange(it)) },
+            onBoxChange = { viewModel.onEvent(RapidInputUiEvent.OnBoxChange(it)) },
+            onYearChange = { viewModel.onEvent(RapidInputUiEvent.OnYearChange(it)) }
+        )
     }
 }
 
 @Composable
 fun DashboardStagedBoxCard(
     box: StagedBox,
-    onClick: () -> Unit,
+    onContinue: () -> Unit,
     onDelete: () -> Unit
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() },
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+            .clickable { onContinue() },
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
+        shape = RoundedCornerShape(32.dp), 
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape = RoundedCornerShape(16.dp),
-        border = BorderStroke(1.dp, Color(0xFFE0E0E0))
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(20.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Surface(
-                color = Color(0xFFE8F5E9),
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier.size(56.dp)
+            Box(
+                modifier = Modifier
+                    .size(56.dp)
+                    .background(MaterialTheme.colorScheme.primary, CircleShape),
+                contentAlignment = Alignment.Center
             ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.List,
-                        contentDescription = null,
-                        tint = Color(0xFF2E7D32),
-                        modifier = Modifier.size(28.dp)
-                    )
-                }
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.List,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.size(28.dp)
+                )
             }
-
-            Spacer(modifier = Modifier.width(16.dp))
-
+            
+            Spacer(modifier = Modifier.width(20.dp))
+            
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = "Box ${box.box}",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF212121)
+                    color = MaterialTheme.colorScheme.onSecondaryContainer
                 )
                 Text(
-                    text = "${box.warehouse} • Rak ${box.rack}",
+                    text = "Waiting for upload • ${box.itemCount} documents",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
                 )
                 Text(
-                    text = "Tahun ${box.year}",
+                    text = "${box.warehouse} - Rak ${box.rack} (${box.year})",
                     style = MaterialTheme.typography.labelSmall,
-                    color = Color(0xFF2E7D32),
-                    fontWeight = FontWeight.Medium
+                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.5f)
                 )
             }
 
             IconButton(onClick = onDelete) {
-                Icon(
-                    imageVector = Icons.Default.Delete,
-                    contentDescription = "Hapus",
-                    tint = Color(0xFFD32F2F),
-                    modifier = Modifier.size(20.dp)
-                )
+                Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
             }
         }
     }
@@ -232,39 +314,42 @@ fun DashboardStagedBoxCard(
 
 @Composable
 fun DashboardSummary(uiState: RapidInputUiState) {
+    val totalItems = uiState.existingStagedBoxes.sumOf { it.itemCount }
+    
     Surface(
-        color = Color.White,
+        color = MaterialTheme.colorScheme.surface,
         shadowElevation = 8.dp,
         modifier = Modifier.fillMaxWidth()
     ) {
-        Column(modifier = Modifier.padding(20.dp)) {
+        Column(modifier = Modifier.padding(24.dp)) {
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, thickness = 1.dp)
+            Spacer(modifier = Modifier.height(16.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Column {
                     Text(
-                        text = "Total Antrian",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = Color.Gray
+                        text = "$totalItems items in staging •",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.Medium
                     )
                     Text(
-                        text = "${uiState.existingStagedBoxes.size} Box",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = Color(0xFF1B5E20)
+                        text = "${uiState.existingStagedBoxes.size} Boxes ready",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
                 
-                Button(
-                    onClick = { /* Implement All Upload */ },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Icon(Icons.AutoMirrored.Filled.Send, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Upload Semua", fontWeight = FontWeight.Bold)
-                }
+                // Green Progress Bar from image
+                Box(
+                    modifier = Modifier
+                        .width(120.dp)
+                        .height(12.dp)
+                        .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(6.dp))
+                )
             }
         }
     }
@@ -272,42 +357,41 @@ fun DashboardSummary(uiState: RapidInputUiState) {
 
 @Composable
 fun EmptyStagingContent() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(32.dp)
+        Box(
+            modifier = Modifier
+                .size(100.dp)
+                .background(MaterialTheme.colorScheme.secondaryContainer, CircleShape),
+            contentAlignment = Alignment.Center
         ) {
-            Surface(
-                color = Color.White.copy(alpha = 0.5f),
-                shape = CircleShape,
-                modifier = Modifier.size(120.dp)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.List,
-                        contentDescription = null,
-                        tint = Color.Gray,
-                        modifier = Modifier.size(64.dp)
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(24.dp))
-            Text(
-                text = "Belum ada antrian box",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = Color.Gray
-            )
-            Text(
-                text = "Klik tombol + di bawah untuk mulai menginput arsip per box.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color.Gray,
-                textAlign = TextAlign.Center
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.List,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(48.dp)
             )
         }
+        Spacer(modifier = Modifier.height(24.dp))
+        Text(
+            text = "Belum Ada Box di Staging",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = "Gunakan tombol + untuk membuat box baru dan mulai memasukkan data arsip secara masal.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
     }
 }
 
@@ -325,42 +409,31 @@ fun AddBoxDialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
-        Surface(
+        Card(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(24.dp),
-            shape = RoundedCornerShape(28.dp),
-            color = Color.White
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
         ) {
-            Column(
-                modifier = Modifier.padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
+            Column(modifier = Modifier.padding(24.dp)) {
                 Text(
-                    text = "Buat Sesi Box Baru",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = Color(0xFF1B5E20)
+                    text = "Inisialisasi Box Baru",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
-                
-                Text(
-                    text = "Lengkapi metadata box sebelum menginput dokumen.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.Gray,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(vertical = 8.dp)
-                )
-
-                HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
                 FormTextField(
-                    label = "Gudang / Ruang",
+                    label = "Gudang",
                     value = uiState.boxContext.warehouse,
                     onValueChange = onWarehouseChange,
                     error = uiState.validationErrors["warehouse"]
                 )
-                
-                Row(modifier = Modifier.fillMaxWidth()) {
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     FormTextField(
                         label = "Rak",
                         value = uiState.boxContext.rack,
@@ -368,7 +441,6 @@ fun AddBoxDialog(
                         modifier = Modifier.weight(1f),
                         error = uiState.validationErrors["rack"]
                     )
-                    Spacer(modifier = Modifier.width(12.dp))
                     FormTextField(
                         label = "Nomor Box",
                         value = uiState.boxContext.box,
@@ -377,30 +449,35 @@ fun AddBoxDialog(
                         error = uiState.validationErrors["box"]
                     )
                 }
-                
+                Spacer(modifier = Modifier.height(12.dp))
+
                 FormTextField(
-                    label = "Tahun Anggaran",
+                    label = "Tahun Dokumen",
                     value = uiState.boxContext.year,
                     onValueChange = onYearChange,
-                    error = uiState.validationErrors["year"]
+                    error = uiState.validationErrors["year"],
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number)
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    TextButton(onClick = onDismiss) {
-                        Text("Batal", color = Color.Gray)
+                    TextButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("Batal")
                     }
-                    Spacer(modifier = Modifier.width(8.dp))
                     Button(
                         onClick = onConfirm,
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
-                        shape = RoundedCornerShape(12.dp)
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                     ) {
-                        Text("Mulai Input", fontWeight = FontWeight.Bold)
+                        Text("Buat & Input")
                     }
                 }
             }

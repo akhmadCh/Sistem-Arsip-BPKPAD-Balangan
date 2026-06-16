@@ -5,6 +5,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
@@ -12,6 +13,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
+import com.example.arsipbpkpad.R
 import com.example.arsipbpkpad.presentation.analytics.AnalyticsScreen
 import com.example.arsipbpkpad.presentation.archive.add.manual.RapidInputScreen
 import com.example.arsipbpkpad.presentation.archive.add.manual.RapidInputUiEvent
@@ -21,7 +23,6 @@ import com.example.arsipbpkpad.presentation.archive.detail.ArchiveDetailScreen
 import com.example.arsipbpkpad.presentation.archive.list.ArchiveListScreen
 import com.example.arsipbpkpad.presentation.home.screen.HomeScreen
 import com.example.arsipbpkpad.presentation.scan.ScanScreen
-import com.example.arsipbpkpad.presentation.components.BottomNavItem
 
 @Composable
 fun AppNavHost(
@@ -29,6 +30,15 @@ fun AppNavHost(
     navController: NavHostController = rememberNavController(),
     startDestination: String = Screen.Home.route
 ) {
+    val archiveFlowRoute = stringResource(R.string.route_archive_flow)
+    val navHomeId = stringResource(R.string.nav_home_id)
+    val navArchiveId = stringResource(R.string.nav_archive_id)
+    val navAddId = stringResource(R.string.nav_add_id)
+    val navAnalyticsId = stringResource(R.string.nav_analytics_id)
+    val sessionIdKey = stringResource(R.string.key_session_id)
+    val archiveIdKey = stringResource(R.string.key_archive_id)
+    val ocrResultKey = stringResource(R.string.key_ocr_result)
+
     NavHost(
         modifier = modifier,
         navController = navController,
@@ -37,13 +47,13 @@ fun AppNavHost(
         composable(Screen.Home.route) {
             HomeScreen(
                 onNavigateToArchiveList = {
-                    navController.navigate("archive_flow")
-                },
-                onNavigateToStagingBoxList = {
-                    navController.navigate(Screen.StagingBoxList.route)
+                    navController.navigate(archiveFlowRoute)
                 },
                 onNavigateToDetail = { archiveId ->
                     navController.navigate(Screen.ArchiveDetail.createRoute(archiveId))
+                },
+                onNavigateToStagingBoxList = {
+                    navController.navigate(Screen.StagingBoxList.route)
                 },
                 onNavigateToRapidInput = { sessionId ->
                     navController.navigate(Screen.RapidInput.createRoute(sessionId))
@@ -59,138 +69,118 @@ fun AppNavHost(
 
         navigation(
             startDestination = Screen.ArchiveList.route,
-            route = "archive_flow"
+            route = archiveFlowRoute
         ) {
-            composable(Screen.ArchiveList.route) { entry ->
-                val flowEntry = remember(entry) { navController.getBackStackEntry("archive_flow") }
-                val rapidViewModel: RapidInputViewModel = hiltViewModel(flowEntry)
-
+            composable(Screen.ArchiveList.route) {
                 ArchiveListScreen(
                     onNavigateToDetail = { archiveId ->
                         navController.navigate(Screen.ArchiveDetail.createRoute(archiveId))
                     },
                     onNavigateToRapidInput = {
-                        val sessionId = rapidViewModel.uiState.value.currentSessionId ?: ""
-                        navController.navigate(Screen.RapidInput.createRoute(sessionId))
+                        navController.navigate(Screen.RapidInput.route)
                     },
                     onNavigateToScan = {
                         navController.navigate(Screen.Scan.route)
                     },
-                    onNavigateBack = { navController.popBackStack() },
-                    onNavigateToBottomNav = { item: BottomNavItem ->
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    },
+                    onNavigateToBottomNav = { item ->
                         when (item.route) {
-                            "home" -> navController.navigate(Screen.Home.route) {
-                                popUpTo(Screen.Home.route) { inclusive = true }
-                            }
-                            "archive" -> { /* Already here */ }
-                            "add" -> navController.navigate(Screen.StagingBoxList.route)
-                            "analytics" -> navController.navigate(Screen.Analytics.route)
+                            navHomeId -> navController.navigate(Screen.Home.route)
+                            navArchiveId -> { /* Already here */ }
+                            navAddId -> navController.navigate(Screen.StagingBoxList.route)
+                            navAnalyticsId -> navController.navigate(Screen.Analytics.route)
                         }
                     }
+                )
+            }
+
+            composable(Screen.ArchiveDetail.route) { entry ->
+                val archiveId = entry.arguments?.getString(archiveIdKey) ?: ""
+                ArchiveDetailScreen(
+                    archiveId = archiveId,
+                    onNavigateBack = { navController.popBackStack() }
                 )
             }
 
             composable(Screen.StagingBoxList.route) { entry ->
-                val flowEntry = remember(entry) { navController.getBackStackEntry("archive_flow") }
-                val rapidViewModel: RapidInputViewModel = hiltViewModel(flowEntry)
-
+                val rapidInputViewModel: RapidInputViewModel = hiltViewModel(
+                    remember(entry) { navController.getBackStackEntry(archiveFlowRoute) }
+                )
                 StagingBoxListScreen(
-                    viewModel = rapidViewModel,
+                    viewModel = rapidInputViewModel,
                     onNavigateToRapidInput = { sessionId ->
                         navController.navigate(Screen.RapidInput.createRoute(sessionId))
                     },
                     onNavigateBack = { navController.popBackStack() },
-                    onNavigateToBottomNav = { item: BottomNavItem ->
+                    onNavigateToBottomNav = { item ->
                         when (item.route) {
-                            "home" -> navController.navigate(Screen.Home.route) {
-                                popUpTo(Screen.Home.route) { inclusive = true }
-                            }
-                            "archive" -> navController.navigate("archive_flow") {
-                                popUpTo(Screen.Home.route)
-                            }
-                            "add" -> { /* Already here */ }
-                            "analytics" -> navController.navigate(Screen.Analytics.route)
+                            navHomeId -> navController.navigate(Screen.Home.route)
+                            navArchiveId -> navController.navigate(archiveFlowRoute)
+                            navAddId -> { /* Already here */ }
+                            navAnalyticsId -> navController.navigate(Screen.Analytics.route)
                         }
                     }
                 )
             }
-            
+
             composable(Screen.RapidInput.route) { entry ->
-                val sessionId = entry.arguments?.getString("sessionId") ?: ""
-                val flowEntry = remember(entry) { navController.getBackStackEntry("archive_flow") }
-                val rapidViewModel: RapidInputViewModel = hiltViewModel(flowEntry)
+                val sessionId = entry.arguments?.getString(sessionIdKey) ?: ""
+                val flowEntry = remember(entry) { navController.getBackStackEntry(archiveFlowRoute) }
+                val rapidInputViewModel: RapidInputViewModel = hiltViewModel(flowEntry)
                 
-                // Observe OCR results from multiple possible handles
-                val ocrResult by entry.savedStateHandle.getStateFlow<com.example.arsipbpkpad.domain.model.ParsedMetadata?>("ocr_result", null).collectAsStateWithLifecycle()
-                val flowOcrResult by flowEntry.savedStateHandle.getStateFlow<com.example.arsipbpkpad.domain.model.ParsedMetadata?>("ocr_result", null).collectAsStateWithLifecycle()
+                // Observe OCR results from multiple possible handles to ensure delivery
+                val ocrResult by entry.savedStateHandle.getStateFlow<com.example.arsipbpkpad.domain.model.ParsedMetadata?>(ocrResultKey, null).collectAsStateWithLifecycle()
+                val flowOcrResult by flowEntry.savedStateHandle.getStateFlow<com.example.arsipbpkpad.domain.model.ParsedMetadata?>(ocrResultKey, null).collectAsStateWithLifecycle()
 
                 LaunchedEffect(ocrResult) {
                     ocrResult?.let {
-                        android.util.Log.e("AppNavHost", "UI: OCR result detected on entry handle: $it")
-                        rapidViewModel.onEvent(RapidInputUiEvent.OnOcrResultReceived(it))
-                        entry.savedStateHandle["ocr_result"] = null
+                        rapidInputViewModel.onEvent(RapidInputUiEvent.OnOcrResultReceived(it))
+                        entry.savedStateHandle[ocrResultKey] = null
                     }
                 }
                 
                 LaunchedEffect(flowOcrResult) {
                     flowOcrResult?.let {
-                        android.util.Log.e("AppNavHost", "UI: OCR result detected on flow handle: $it")
-                        rapidViewModel.onEvent(RapidInputUiEvent.OnOcrResultReceived(it))
-                        flowEntry.savedStateHandle["ocr_result"] = null
+                        rapidInputViewModel.onEvent(RapidInputUiEvent.OnOcrResultReceived(it))
+                        flowEntry.savedStateHandle[ocrResultKey] = null
                     }
                 }
 
                 RapidInputScreen(
                     sessionId = sessionId,
                     onNavigateBack = { navController.popBackStack() },
-                    onNavigateToScan = { navController.navigate(Screen.Scan.route) },
-                    viewModel = rapidViewModel,
-                    onNavigateToBottomNav = { item: BottomNavItem ->
+                    onNavigateToScan = {
+                        navController.navigate(Screen.Scan.route)
+                    },
+                    onNavigateToBottomNav = { item ->
                         when (item.route) {
-                            "home" -> navController.navigate(Screen.Home.route) {
-                                popUpTo(Screen.Home.route) { inclusive = true }
-                            }
-                            "archive" -> navController.navigate("archive_flow") {
-                                popUpTo(Screen.Home.route)
-                            }
-                            "add" -> navController.navigate(Screen.StagingBoxList.route)
-                            "analytics" -> navController.navigate(Screen.Analytics.route)
+                            navHomeId -> navController.navigate(Screen.Home.route)
+                            navArchiveId -> navController.navigate(archiveFlowRoute)
+                            navAddId -> navController.navigate(Screen.StagingBoxList.route)
+                            navAnalyticsId -> navController.navigate(Screen.Analytics.route)
                         }
-                    }
+                    },
+                    viewModel = rapidInputViewModel
                 )
             }
         }
 
-        composable(Screen.ArchiveDetail.route) { backStackEntry ->
-            val archiveId = backStackEntry.arguments?.getString("archiveId") ?: ""
-            ArchiveDetailScreen(
-                archiveId = archiveId,
-                onNavigateBack = { navController.popBackStack() }
-            )
-        }
-
         composable(Screen.Scan.route) {
-            android.util.Log.e("AppNavHost", "NAV: Navigating to Scan Screen")
             ScanScreen(
                 onNavigateBack = { navController.popBackStack() },
                 onResultDispatched = { metadata ->
-                    android.util.Log.e("AppNavHost", "NAV: Result received from Scan: $metadata")
+                    // Set result on previous backstack entry (RapidInput)
+                    navController.previousBackStackEntry?.savedStateHandle?.set(ocrResultKey, metadata)
                     
-                    // Set on BOTH possible locations to be 100% sure
-                    navController.previousBackStackEntry?.savedStateHandle?.set("ocr_result", metadata)
-                    
+                    // Also set on flow entry to ensure delivery if the above fails
                     try {
-                        val flowEntry = navController.getBackStackEntry("archive_flow")
-                        flowEntry.savedStateHandle.set("ocr_result", metadata)
-                        android.util.Log.e("AppNavHost", "NAV: Result set on archive_flow handle")
+                        val flowEntry = navController.getBackStackEntry(archiveFlowRoute)
+                        flowEntry.savedStateHandle.set(ocrResultKey, metadata)
                     } catch (e: Exception) {
-                        android.util.Log.e("AppNavHost", "NAV: archive_flow not found")
+                        android.util.Log.e("AppNavHost", "archive_flow not found during scan dispatch")
                     }
-
-                    // ALSO try setting it on the specific RapidInput destination entry if visible
-                    try {
-                        navController.getBackStackEntry(Screen.RapidInput.route)?.savedStateHandle?.set("ocr_result", metadata)
-                    } catch (e: Exception) {}
 
                     navController.popBackStack()
                 }
@@ -201,14 +191,10 @@ fun AppNavHost(
             AnalyticsScreen(
                 onNavigateToBottomNav = { item ->
                     when (item.route) {
-                        "home" -> navController.navigate(Screen.Home.route) {
-                            popUpTo(Screen.Home.route) { inclusive = true }
-                        }
-                        "archive" -> navController.navigate("archive_flow") {
-                            popUpTo(Screen.Home.route)
-                        }
-                        "add" -> navController.navigate(Screen.StagingBoxList.route)
-                        "analytics" -> { /* Already here */ }
+                        navHomeId -> navController.navigate(Screen.Home.route)
+                        navArchiveId -> navController.navigate(archiveFlowRoute)
+                        navAddId -> navController.navigate(Screen.StagingBoxList.route)
+                        navAnalyticsId -> { /* Already here */ }
                     }
                 }
             )

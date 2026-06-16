@@ -27,6 +27,8 @@ class ArchiveRepositoryImpl @Inject constructor(
     private val supabaseClient: SupabaseClient
 ) : ArchiveRepository {
 
+    private val tableName = "archive_documents"
+
     override fun getArchives(query: String?, years: List<Int>): Flow<PagingData<ArchiveDocument>> {
         return Pager(
             config = PagingConfig(
@@ -40,7 +42,7 @@ class ArchiveRepositoryImpl @Inject constructor(
             }
             .onEach {
                 // Background sync
-                syncArchives()
+                syncPendingArchives()
             }
     }
 
@@ -53,7 +55,7 @@ class ArchiveRepositoryImpl @Inject constructor(
             .onStart {
                 emit(ResultState.Loading)
                 // Trigger background sync
-                syncArchives()
+                syncPendingArchives()
             }
             .catch { e ->
                 emit(ResultState.Error(e.message ?: "Unknown Error"))
@@ -87,14 +89,14 @@ class ArchiveRepositoryImpl @Inject constructor(
 
     override suspend fun saveArchive(archive: ArchiveDocument): ResultState<Unit> {
         return try {
-            // 1. Save locally as DRAFT
+            // 1. Save locally as DRAFT (or keep existing if update)
             val entity = archive.toEntity(syncStatus = "DRAFT")
             archiveDao.insertArchive(entity)
 
             try {
                 // 2. Push to Supabase
                 val dto = archive.toDto()
-                supabaseClient.postgrest["arsip_keuangan"].upsert(dto)
+                supabaseClient.postgrest[tableName].upsert(dto)
 
                 // 3. Update local status to SYNCED
                 archiveDao.insertArchive(entity.copy(syncStatus = "SYNCED"))
@@ -117,7 +119,7 @@ class ArchiveRepositoryImpl @Inject constructor(
             try {
                 // 2. Push to Supabase
                 val dtos = archives.map { it.toDto() }
-                supabaseClient.postgrest["arsip_keuangan"].upsert(dtos)
+                supabaseClient.postgrest[tableName].upsert(dtos)
 
                 // 3. Update local status to SYNCED
                 val syncedEntities = entities.map { it.copy(syncStatus = "SYNCED") }
@@ -137,7 +139,7 @@ class ArchiveRepositoryImpl @Inject constructor(
             archiveDao.deleteArchiveById(id)
 
             // 2. Delete from Supabase
-            supabaseClient.postgrest["arsip_keuangan"].delete {
+            supabaseClient.postgrest[tableName].delete {
                 filter {
                     eq("id", id)
                 }
@@ -151,7 +153,7 @@ class ArchiveRepositoryImpl @Inject constructor(
 
     override suspend fun syncArchives(): ResultState<Unit> {
         return try {
-            val response = supabaseClient.postgrest["arsip_keuangan"]
+            val response = supabaseClient.postgrest[tableName]
                 .select()
                 .decodeList<ArchiveDto>()
             
@@ -163,6 +165,23 @@ class ArchiveRepositoryImpl @Inject constructor(
             ResultState.Success(Unit)
         } catch (e: Exception) {
             ResultState.Error(e.message ?: "Sync failed")
+        }
+    }
+
+    override suspend fun syncPendingArchives(): ResultState<Unit> {
+        return try {
+            val pendingEntities = archiveDao.getPendingArchives()
+            if (pendingEntities.isEmpty()) return ResultState.Success(Unit)
+
+            val dtos = pendingEntities.map { it.toDomain().toDto() }
+            supabaseClient.postgrest[tableName].upsert(dtos)
+
+            val syncedEntities = pendingEntities.map { it.copy(syncStatus = "SYNCED") }
+            archiveDao.insertArchives(syncedEntities)
+
+            ResultState.Success(Unit)
+        } catch (e: Exception) {
+            ResultState.Error("Sync pending failed: ${e.message}")
         }
     }
 

@@ -207,7 +207,7 @@ fun RecentArchiveItem(item: RecentArchive, onClick: (String) -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.End
         ) {
-            val statusColor = if (item.isAvailable) Color(0xFF4CAF50) else MaterialTheme.colorScheme.error
+            val statusColor = if (item.isAvailable) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
             val statusText =
                 if (item.isAvailable) stringResource(R.string.status_gudang) else stringResource(R.string.status_keluar)
 
@@ -314,7 +314,7 @@ fun RecentArchiveTable(items: List<RecentArchive>, onArchiveClick: (String) -> U
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.End
                 ) {
-                    val statusColor = if (item.isAvailable) Color(0xFF4CAF50) else MaterialTheme.colorScheme.error
+                    val statusColor = if (item.isAvailable) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
                     val statusText = if (item.isAvailable) stringResource(R.string.status_gudang) else stringResource(R.string.status_keluar)
 
                     Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(statusColor))

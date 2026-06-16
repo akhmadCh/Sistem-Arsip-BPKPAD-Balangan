@@ -26,7 +26,8 @@ fun BpkpadTopAppBar(
     modifier: Modifier = Modifier,
     title: @Composable () -> Unit = { DefaultTopAppBarTitle() },
     navigationIcon: @Composable () -> Unit = {},
-    actions: @Composable RowScope.() -> Unit = {}
+    actions: @Composable RowScope.() -> Unit = {},
+    containerColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.background
 ) {
     TopAppBar(
         modifier = modifier,
@@ -34,7 +35,7 @@ fun BpkpadTopAppBar(
         navigationIcon = navigationIcon,
         actions = actions,
         colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.background
+            containerColor = containerColor
         )
     )
 }

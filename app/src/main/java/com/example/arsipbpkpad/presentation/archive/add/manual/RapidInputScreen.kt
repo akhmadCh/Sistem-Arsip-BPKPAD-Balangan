@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
@@ -28,6 +29,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -43,6 +45,7 @@ import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -56,15 +59,20 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.arsipbpkpad.R
 import com.example.arsipbpkpad.domain.model.ArchiveDocument
-import com.example.arsipbpkpad.presentation.components.BpkpadTopAppBar
+import com.example.arsipbpkpad.domain.model.DocCopyType
+import com.example.arsipbpkpad.domain.model.DocType
 import com.example.arsipbpkpad.presentation.components.BottomNavItem
+import com.example.arsipbpkpad.presentation.components.BpkpadTopAppBar
 import com.example.arsipbpkpad.utils.CurrencyVisualTransformation
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -73,8 +81,8 @@ fun RapidInputScreen(
     sessionId: String,
     onNavigateBack: () -> Unit,
     onNavigateToScan: () -> Unit,
+    onNavigateToBottomNav: (BottomNavItem) -> Unit,
     viewModel: RapidInputViewModel = hiltViewModel(),
-    onNavigateToBottomNav: (BottomNavItem) -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -117,15 +125,14 @@ fun RapidInputScreen(
             BpkpadTopAppBar(
                 title = { 
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
+                        androidx.compose.foundation.Image(
+                            painter = painterResource(id = R.drawable.logo_balangan),
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(24.dp)
+                            modifier = Modifier.size(32.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Input Dokumen Box ${uiState.boxContext.box}", 
+                            text = "Input Box ${uiState.boxContext.box}",
                             style = MaterialTheme.typography.titleMedium, 
                             fontWeight = FontWeight.ExtraBold,
                             color = MaterialTheme.colorScheme.primary
@@ -145,72 +152,75 @@ fun RapidInputScreen(
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = {
-                    android.util.Log.d("RapidInputScreen", "FAB clicked - navigating to Scan")
-                    onNavigateToScan()
-                },
+                onClick = onNavigateToScan,
                 containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = Color.White
+                contentColor = MaterialTheme.colorScheme.onPrimary
             ) {
                 Icon(imageVector = Icons.Default.CameraAlt, contentDescription = "Scan Document")
             }
         },
         bottomBar = {
-            Surface(
-                color = Color.White,
-                shadowElevation = 8.dp,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    if (uiState.stagedDocuments.isNotEmpty()) {
-                        Button(
-                            onClick = { 
-                                uiState.currentSessionId?.let { 
-                                    viewModel.onEvent(RapidInputUiEvent.OnConfirmUpload(it)) 
+            Column {
+                Surface(
+                    color = MaterialTheme.colorScheme.surface,
+                    shadowElevation = 8.dp,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        if (uiState.stagedDocuments.isNotEmpty()) {
+                            Button(
+                                onClick = { 
+                                    uiState.currentSessionId?.let { 
+                                        viewModel.onEvent(RapidInputUiEvent.OnConfirmUpload(it)) 
+                                    }
+                                },
+                                enabled = !uiState.isLoading,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(56.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                                shape = RoundedCornerShape(28.dp)
+                            ) {
+                                if (uiState.isLoading) {
+                                    CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(24.dp))
+                                } else {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(Icons.Filled.Done, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary)
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            text = "Upload (${uiState.stagedDocuments.size}) Dokumen ke Database", 
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onPrimary
+                                        )
+                                    }
                                 }
-                            },
-                            enabled = !uiState.isLoading,
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
+                        
+                        OutlinedButton(
+                            onClick = { onNavigateBack() },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(56.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1B5E20)),
-                            shape = RoundedCornerShape(28.dp)
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
+                            shape = RoundedCornerShape(28.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
                         ) {
-                            if (uiState.isLoading) {
-                                CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
-                            } else {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(Icons.Filled.Done, contentDescription = null, tint = Color.White)
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        text = "Upload (${uiState.stagedDocuments.size}) Dokumen ke Database", 
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color.White
-                                    )
-                                }
-                            }
+                            Text(
+                                text = if (uiState.stagedDocuments.isEmpty()) "Selesai & Kembali" else "Batal & Keluar",
+                                fontWeight = FontWeight.Bold
+                            )
                         }
-                        Spacer(modifier = Modifier.height(8.dp))
-                    }
-                    
-                    OutlinedButton(
-                        onClick = { onNavigateBack() },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp),
-                        border = BorderStroke(1.dp, Color(0xFF2E7D32)),
-                        shape = RoundedCornerShape(28.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF2E7D32))
-                    ) {
-                        Text(
-                            text = if (uiState.stagedDocuments.isEmpty()) "Selesai & Kembali" else "Batal & Keluar",
-                            fontWeight = FontWeight.Bold
-                        )
                     }
                 }
+                com.example.arsipbpkpad.presentation.components.BpkpadBottomNavigation(
+                    currentRoute = BottomNavItem.ADD.route,
+                    onNavigate = onNavigateToBottomNav
+                )
             }
         },
-        containerColor = Color(0xFFF3FAFF)
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         LazyColumn(
             modifier = Modifier
@@ -223,7 +233,7 @@ fun RapidInputScreen(
                     modifier = Modifier
                         .padding(16.dp)
                         .fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     shape = RoundedCornerShape(24.dp),
                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
                 ) {
@@ -231,52 +241,122 @@ fun RapidInputScreen(
                         Text(
                             text = if (uiState.editingId != null) "Edit Dokumen" else "Tambah Dokumen Baru",
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                         
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            FormDropdownField(
-                                label = "Tipe",
-                                value = uiState.docType,
-                                options = listOf("SP2D", "SPM", "SPP", "SPJ"),
-                                onOptionSelected = { viewModel.onEvent(RapidInputUiEvent.OnDocTypeChange(it)) },
-                                modifier = Modifier.weight(1f)
+                        // Document Type & Bundle Logic
+                        FormDropdownField(
+                            label = "Tipe Dokumen",
+                            value = uiState.docType.name,
+                            // Hide SPJ from manual select per rules
+                            options = listOf("SP2D", "SPM", "SPP"),
+                            onOptionSelected = { viewModel.onEvent(RapidInputUiEvent.OnDocTypeChange(DocType.valueOf(it))) },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        // Auto-Bundle Checkbox
+                        if (uiState.editingId == null && uiState.docType == DocType.SP2D) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                            ) {
+                                Checkbox(
+                                    checked = uiState.isAutoBundleEnabled,
+                                    onCheckedChange = { viewModel.onEvent(RapidInputUiEvent.OnAutoBundleToggle(it)) }
+                                )
+                                Text(
+                                    text = "Buatkan SPM dan SPJ (Auto-Bundle)",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // Physical Status (Original/Copy)
+                        Text(
+                            text = "Status Fisik", 
+                            style = MaterialTheme.typography.labelMedium, 
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                            modifier = Modifier.padding(vertical = 8.dp)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                RadioButton(
+                                    selected = uiState.copyType == DocCopyType.ORIGINAL,
+                                    onClick = { viewModel.onEvent(RapidInputUiEvent.OnCopyTypeChange(DocCopyType.ORIGINAL)) }
+                                )
+                                Text("Asli", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                RadioButton(
+                                    selected = uiState.copyType == DocCopyType.COPY,
+                                    onClick = { viewModel.onEvent(RapidInputUiEvent.OnCopyTypeChange(DocCopyType.COPY)) }
+                                )
+                                Text("Salinan", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
+                            }
+                        }
+
+                        // Copy Count (Visible only for COPY)
+                        if (uiState.copyType == DocCopyType.COPY) {
+                            FormTextField(
+                                label = "Jumlah Salinan",
+                                value = uiState.copyCount,
+                                onValueChange = { viewModel.onEvent(RapidInputUiEvent.OnCopyCountChange(it)) },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                error = uiState.validationErrors["copyCount"]
                             )
-                            FormDropdownField(
-                                label = "Status",
-                                value = uiState.copyType,
-                                options = listOf("ORIGINAL", "COPY"),
-                                onOptionSelected = { viewModel.onEvent(RapidInputUiEvent.OnCopyTypeChange(it)) },
-                                modifier = Modifier.weight(1f)
+                        }
+
+                        if (uiState.docType != DocType.SPJ || !uiState.isAutoBundleEnabled) {
+                            FormTextField(
+                                label = if (uiState.isAutoBundleEnabled) "Nomor Dokumen SP2D" else "Nomor Dokumen",
+                                value = uiState.documentNumber,
+                                onValueChange = { viewModel.onEvent(RapidInputUiEvent.OnDocNumberChange(it)) },
+                                error = uiState.validationErrors["docNumber"]
+                            )
+                        }
+                        
+                        if (uiState.isAutoBundleEnabled && uiState.editingId == null) {
+                            FormTextField(
+                                label = "Nomor Dokumen SPM",
+                                value = uiState.spmDocumentNumber,
+                                onValueChange = { viewModel.onEvent(RapidInputUiEvent.OnSpmDocNumberChange(it)) },
+                                error = uiState.validationErrors["spmDocNumber"]
                             )
                         }
                         
                         FormTextField(
-                            label = "Nomor Dokumen",
-                            value = uiState.documentNumber,
-                            onValueChange = { viewModel.onEvent(RapidInputUiEvent.OnDocNumberChange(it)) },
-                            error = uiState.validationErrors["docNumber"]
-                        )
-                        
-                        FormTextField(
-                            label = "Deskripsi / Perihal",
+                            label = "Uraian",
                             value = uiState.subject,
                             onValueChange = { viewModel.onEvent(RapidInputUiEvent.OnSubjectChange(it)) },
-                            singleLine = false,
-                            minLines = 2,
                             error = uiState.validationErrors["subject"]
                         )
+
+                        if (uiState.isAutoBundleEnabled && uiState.editingId == null) {
+                            FormTextField(
+                                label = "Deskripsi SPJ",
+                                value = uiState.spjDescription,
+                                onValueChange = { viewModel.onEvent(RapidInputUiEvent.OnSpjDescriptionChange(it)) },
+                                error = uiState.validationErrors["spjDescription"]
+                            )
+                        }
                         
                         FormTextField(
-                            label = "Nominal (Opsional)",
+                            label = "Nominal",
                             value = uiState.nominal,
                             onValueChange = { viewModel.onEvent(RapidInputUiEvent.OnNominalChange(it)) },
                             visualTransformation = CurrencyVisualTransformation(),
-                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
-                                keyboardType = androidx.compose.ui.text.input.KeyboardType.Number
-                            )
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                         )
 
                         Spacer(modifier = Modifier.height(16.dp))
@@ -286,14 +366,14 @@ fun RapidInputScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(56.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                             shape = RoundedCornerShape(28.dp)
                         ) {
-                            Icon(Icons.Default.Add, contentDescription = null, tint = Color.White)
+                            Icon(Icons.Default.Add, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary)
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = if (uiState.editingId != null) "Perbarui di Staging" else "Tambah ke Staging",
-                                color = Color.White,
+                                color = MaterialTheme.colorScheme.onPrimary,
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -317,20 +397,14 @@ fun RapidInputScreen(
                         .fillMaxWidth()
                         .padding(horizontal = 24.dp, vertical = 8.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically) {
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Text(
                         text = "Daftar Staging (${uiState.stagedDocuments.size})",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
-                        color = Color.Gray
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
                     )
-                    if (uiState.stagedDocuments.isNotEmpty()) {
-                        Text(
-                            text = "Geser untuk aksi",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = Color.LightGray
-                        )
-                    }
                 }
             }
 
@@ -356,13 +430,13 @@ fun RapidInputScreen(
                             Icon(
                                 imageVector = Icons.Filled.Info,
                                 contentDescription = null, 
-                                tint = Color.LightGray,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
                                 modifier = Modifier.size(48.dp)
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             Text(
                                 text = "Keranjang staging masih kosong.\nSilakan masukkan dokumen di atas.", 
-                                color = Color.Gray, 
+                                color = MaterialTheme.colorScheme.onSurfaceVariant, 
                                 style = MaterialTheme.typography.bodyMedium,
                                 textAlign = TextAlign.Center
                             )
@@ -384,7 +458,7 @@ fun StagedItemRow(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = RoundedCornerShape(16.dp),
         border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
@@ -400,20 +474,30 @@ fun StagedItemRow(
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                     }
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(doc.documentNumber ?: "-", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    Text(
+                        text = doc.documentNumber ?: "-", 
+                        fontWeight = FontWeight.Bold, 
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
                 }
             },
             supportingContent = { 
                 Column {
-                    Text(doc.description ?: "-", maxLines = 1, fontSize = 12.sp, color = Color.DarkGray)
+                    Text(
+                        text = doc.description ?: "-", 
+                        maxLines = 1, 
+                        fontSize = 12.sp, 
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                     Text(
                         text = "Status: ${doc.copyType} | Nominal: Rp ${doc.nominal?.toLong() ?: 0}",
                         fontSize = 11.sp,
-                        color = Color.Gray
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
                     )
                 }
             },
@@ -423,7 +507,7 @@ fun StagedItemRow(
                         Icon(Icons.Default.Edit, contentDescription = "Edit", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
                     }
                     IconButton(onClick = onDelete) {
-                        Icon(Icons.Default.Delete, contentDescription = "Delete", tint = Color(0xFFD32F2F), modifier = Modifier.size(18.dp))
+                        Icon(Icons.Default.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp))
                     }
                 }
             },
@@ -442,10 +526,15 @@ fun FormTextField(
     singleLine: Boolean = true,
     minLines: Int = 1,
     visualTransformation: androidx.compose.ui.text.input.VisualTransformation = androidx.compose.ui.text.input.VisualTransformation.None,
-    keyboardOptions: androidx.compose.foundation.text.KeyboardOptions = androidx.compose.foundation.text.KeyboardOptions.Default
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default
 ) {
     Column(modifier = modifier.padding(bottom = 8.dp)) {
-        Text(text = label, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+        Text(
+            text = label, 
+            style = MaterialTheme.typography.labelMedium, 
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
@@ -457,8 +546,8 @@ fun FormTextField(
             keyboardOptions = keyboardOptions,
             shape = RoundedCornerShape(12.dp),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = Color.White,
-                unfocusedContainerColor = Color.White
+                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surface
             )
         )
         if (error != null) {
@@ -478,7 +567,12 @@ fun FormDropdownField(
 ) {
     var expanded by remember { mutableStateOf(false) }
     Column(modifier = modifier.padding(bottom = 8.dp)) {
-        Text(text = label, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+        Text(
+            text = label, 
+            style = MaterialTheme.typography.labelMedium, 
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
         ExposedDropdownMenuBox(
             expanded = expanded,
             onExpandedChange = { expanded = !expanded }
@@ -491,8 +585,8 @@ fun FormDropdownField(
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                 shape = RoundedCornerShape(8.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White
+                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface
                 )
             )
             ExposedDropdownMenu(

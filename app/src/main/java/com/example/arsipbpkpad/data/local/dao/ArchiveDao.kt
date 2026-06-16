@@ -47,6 +47,9 @@ interface ArchiveDao {
     @Query("DELETE FROM archives WHERE id = :id")
     suspend fun deleteArchiveById(id: String)
 
+    @Query("SELECT * FROM archives WHERE syncStatus = 'DRAFT'")
+    suspend fun getPendingArchives(): List<ArchiveEntity>
+
     @Query("DELETE FROM archives")
     suspend fun clearArchives()
 }

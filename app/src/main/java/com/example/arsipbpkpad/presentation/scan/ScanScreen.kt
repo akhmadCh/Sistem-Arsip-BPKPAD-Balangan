@@ -70,7 +70,17 @@ fun ScanScreen(
     Scaffold(
         topBar = {
             BpkpadTopAppBar(
-                title = { Text("Scan Dokumen", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) },
+                title = { 
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        androidx.compose.foundation.Image(
+                            painter = androidx.compose.ui.res.painterResource(id = R.drawable.logo_balangan),
+                            contentDescription = null,
+                            modifier = Modifier.size(32.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Scan Dokumen", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) 
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(

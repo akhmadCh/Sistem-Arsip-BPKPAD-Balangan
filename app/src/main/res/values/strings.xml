@@ -162,4 +162,14 @@
     <string name="no_data_for_year">Tidak ada data arsip untuk filter yang dipilih.</string>
     <string name="try_another_filter">Silakan coba filter atau tahun lain.</string>
 
+    <!-- Navigation Routes and Keys -->
+    <string name="route_archive_flow">archive_flow</string>
+    <string name="nav_home_id">home</string>
+    <string name="nav_archive_id">archive</string>
+    <string name="nav_add_id">add</string>
+    <string name="nav_analytics_id">analytics</string>
+    <string name="key_session_id">sessionId</string>
+    <string name="key_archive_id">archiveId</string>
+    <string name="key_ocr_result">ocr_result</string>
+
 </resources>
