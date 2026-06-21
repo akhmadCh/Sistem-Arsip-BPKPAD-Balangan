@@ -73,6 +73,21 @@ class ArchiveListViewModel @Inject constructor(
         }
         observeAvailableYears()
         observeYearStats()
+        syncRemoteData()
+    }
+
+    private fun syncRemoteData() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            importArchivesUseCase::class.java.getDeclaredField("repository").apply {
+                isAccessible = true
+            }.get(importArchivesUseCase).let { repo ->
+                if (repo is com.example.arsipbpkpad.domain.repository.ArchiveRepository) {
+                    repo.syncArchives()
+                }
+            }
+            _uiState.update { it.copy(isLoading = false) }
+        }
     }
 
     private fun observeYearStats() {

@@ -5,10 +5,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -17,11 +17,13 @@ import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.arsipbpkpad.domain.model.ArchiveDocument
+import com.example.arsipbpkpad.ui.theme.PrimaryGreen
 
 @Composable
 fun ArchiveTableHeader(
@@ -29,46 +31,44 @@ fun ArchiveTableHeader(
     showStatus: Boolean = true
 ) {
     Surface(
-        color = MaterialTheme.colorScheme.surfaceVariant,
+        color = PrimaryGreen,
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp),
+            modifier = Modifier.height(48.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            HeaderCell(text = "No", weight = 0.08f)
-            VerticalDivider()
-            HeaderCell(text = "Kode", weight = 0.20f)
-            VerticalDivider()
-            HeaderCell(text = "No Dokumen", weight = if (showCondition || showStatus) 0.30f else 0.60f)
-            VerticalDivider()
-            HeaderCell(text = "Thn", weight = 0.12f)
+            HeaderCell(text = "No", width = 48.dp)
+            VerticalDivider(color = Color.White.copy(alpha = 0.3f))
+            HeaderCell(text = "Kode", width = 100.dp)
+            VerticalDivider(color = Color.White.copy(alpha = 0.3f))
+            HeaderCell(text = "No Dokumen", width = 200.dp)
+            VerticalDivider(color = Color.White.copy(alpha = 0.3f))
+            HeaderCell(text = "Thn", width = 64.dp)
             
             if (showCondition) {
-                VerticalDivider()
-                HeaderCell(text = "Kondisi", weight = 0.15f)
+                VerticalDivider(color = Color.White.copy(alpha = 0.3f))
+                HeaderCell(text = "Kondisi", width = 100.dp)
             }
             
             if (showStatus) {
-                VerticalDivider()
-                HeaderCell(text = "Status", weight = 0.15f)
+                VerticalDivider(color = Color.White.copy(alpha = 0.3f))
+                HeaderCell(text = "Status", width = 120.dp)
             }
         }
     }
 }
 
 @Composable
-fun RowScope.HeaderCell(text: String, weight: Float) {
+fun HeaderCell(text: String, width: androidx.compose.ui.unit.Dp) {
     Text(
         text = text,
         modifier = Modifier
-            .weight(weight)
+            .width(width)
             .padding(horizontal = 4.dp),
         style = MaterialTheme.typography.labelMedium,
         fontWeight = FontWeight.ExtraBold,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        color = Color.White,
         textAlign = TextAlign.Center
     )
 }
@@ -91,32 +91,31 @@ fun ArchiveListItemCard(
     Column(modifier = modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier
-                .fillMaxWidth()
                 .background(backgroundColor)
                 .clickable { onClick() }
                 .height(56.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // 1. No
-            TableCell(text = "$no.", weight = 0.08f)
+            TableCell(text = "$no.", width = 48.dp)
             VerticalDivider()
 
             // 2. Kode
-            TableCell(text = archive.classificationCode, weight = 0.20f, isBold = true, color = MaterialTheme.colorScheme.primary)
+            TableCell(text = archive.classificationCode, width = 100.dp, isBold = true, color = PrimaryGreen)
             VerticalDivider()
 
             // 3. No Dokumen
-            TableCell(text = archive.documentNumber ?: "-", weight = if (showCondition || showStatus) 0.30f else 0.60f, textAlign = TextAlign.Start)
+            TableCell(text = archive.documentNumber ?: "-", width = 200.dp, textAlign = TextAlign.Start)
             VerticalDivider()
 
             // 4. Tahun
-            TableCell(text = archive.year.toString(), weight = 0.12f)
+            TableCell(text = archive.year.toString(), width = 64.dp)
 
             // 5. Kondisi
             if (showCondition) {
                 VerticalDivider()
                 Box(
-                    modifier = Modifier.weight(0.15f),
+                    modifier = Modifier.width(100.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     ConditionBadge(condition = archive.condition.name)
@@ -127,7 +126,7 @@ fun ArchiveListItemCard(
             if (showStatus) {
                 VerticalDivider()
                 Box(
-                    modifier = Modifier.weight(0.15f),
+                    modifier = Modifier.width(120.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     DocStatusBadge(status = archive.status.name)
@@ -139,9 +138,9 @@ fun ArchiveListItemCard(
 }
 
 @Composable
-fun RowScope.TableCell(
+fun TableCell(
     text: String,
-    weight: Float,
+    width: androidx.compose.ui.unit.Dp,
     isBold: Boolean = false,
     textAlign: TextAlign = TextAlign.Center,
     color: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurface
@@ -149,7 +148,7 @@ fun RowScope.TableCell(
     Text(
         text = text,
         modifier = Modifier
-            .weight(weight)
+            .width(width)
             .padding(horizontal = 8.dp),
         style = MaterialTheme.typography.bodyMedium,
         fontWeight = if (isBold) FontWeight.Bold else FontWeight.Normal,

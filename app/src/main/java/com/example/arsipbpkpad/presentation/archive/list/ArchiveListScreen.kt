@@ -5,14 +5,12 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -26,7 +24,9 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.verticalScroll
+import com.example.arsipbpkpad.utils.DateUtils
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
@@ -35,14 +35,16 @@ import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
@@ -53,17 +55,15 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -76,7 +76,9 @@ import com.example.arsipbpkpad.presentation.components.ArchiveListItemCard
 import com.example.arsipbpkpad.presentation.components.ArchiveTableHeader
 import com.example.arsipbpkpad.presentation.components.BottomNavItem
 import com.example.arsipbpkpad.presentation.components.BpkpadBottomNavigation
+import com.example.arsipbpkpad.presentation.components.BpkpadConfirmDialog
 import com.example.arsipbpkpad.presentation.components.BpkpadExpandableFAB
+import com.example.arsipbpkpad.presentation.components.StatusDialog
 import com.example.arsipbpkpad.ui.theme.ArsipBPKPADTheme
 
 @Composable
@@ -96,14 +98,18 @@ fun ArchiveListScreen(
 
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
+    
+    var showImportConfirm by remember { mutableStateOf(false) }
+    var showExportConfirm by remember { mutableStateOf(false) }
+    var showSuccessDialog by remember { mutableStateOf<String?>(null) }
+    var pendingImportUri by remember { mutableStateOf<Uri?>(null) }
 
     val importLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
         uri?.let {
-            context.contentResolver.openInputStream(it)?.let { inputStream ->
-                viewModel.onEvent(ArchiveListUiEvent.ImportExcel(inputStream))
-            }
+            pendingImportUri = it
+            showImportConfirm = true
         }
     }
 
@@ -119,7 +125,11 @@ fun ArchiveListScreen(
 
     LaunchedEffect(uiState.excelOperationMessage) {
         uiState.excelOperationMessage?.let { message ->
-            snackbarHostState.showSnackbar(message)
+            if (message.contains("Successful")) {
+                showSuccessDialog = message
+            } else {
+                snackbarHostState.showSnackbar(message)
+            }
         }
     }
 
@@ -135,6 +145,47 @@ fun ArchiveListScreen(
         }
     }
 
+    if (showImportConfirm) {
+        BpkpadConfirmDialog(
+            title = "Konfirmasi Import",
+            message = "Apakah Anda yakin ingin mengimpor data dari file Excel ini?",
+            confirmText = "Import",
+            dismissText = "Batal",
+            onConfirm = {
+                pendingImportUri?.let { uri ->
+                    context.contentResolver.openInputStream(uri)?.let { inputStream ->
+                        viewModel.onEvent(ArchiveListUiEvent.ImportExcel(inputStream))
+                    }
+                }
+                showImportConfirm = false
+            },
+            onDismiss = { showImportConfirm = false }
+        )
+    }
+
+    if (showExportConfirm) {
+        BpkpadConfirmDialog(
+            title = "Konfirmasi Export",
+            message = "Apakah Anda yakin ingin mengekspor daftar arsip ke file Excel?",
+            confirmText = "Export",
+            dismissText = "Batal",
+            onConfirm = {
+                exportLauncher.launch("Arsip_${System.currentTimeMillis()}.xlsx")
+                showExportConfirm = false
+            },
+            onDismiss = { showExportConfirm = false }
+        )
+    }
+
+    showSuccessDialog?.let { msg ->
+        StatusDialog(
+            title = "Berhasil",
+            message = msg,
+            onDismiss = { showSuccessDialog = null },
+            isSuccess = true
+        )
+    }
+
     Scaffold(
         topBar = {
             ArchiveListTopBar(
@@ -145,12 +196,6 @@ fun ArchiveListScreen(
                     } else {
                         onNavigateBack()
                     }
-                },
-                onImportClick = {
-                    importLauncher.launch(arrayOf("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
-                },
-                onExportClick = {
-                    exportLauncher.launch("Arsip_${System.currentTimeMillis()}.xlsx")
                 }
             )
         },
@@ -189,7 +234,13 @@ fun ArchiveListScreen(
                     onFilterChange = { type ->
                         viewModel.onEvent(ArchiveListUiEvent.OnFilterChange(type))
                     },
-                    onArchiveClick = onNavigateToDetail
+                    onArchiveClick = onNavigateToDetail,
+                    onImportClick = {
+                        importLauncher.launch(arrayOf("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                    },
+                    onExportClick = {
+                        showExportConfirm = true
+                    }
                 )
             }
             
@@ -203,9 +254,7 @@ fun ArchiveListScreen(
 @Composable
 fun ArchiveListTopBar(
     isFilterConfirmed: Boolean,
-    onBackClick: () -> Unit,
-    onImportClick: () -> Unit,
-    onExportClick: () -> Unit
+    onBackClick: () -> Unit
 ) {
     com.example.arsipbpkpad.presentation.components.BpkpadTopAppBar(
         title = {
@@ -221,22 +270,6 @@ fun ArchiveListTopBar(
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = stringResource(R.string.back),
-                    tint = MaterialTheme.colorScheme.primary
-                )
-            }
-        },
-        actions = {
-            IconButton(onClick = onImportClick) {
-                Icon(
-                    imageVector = Icons.Default.FileUpload,
-                    contentDescription = "Import Excel",
-                    tint = MaterialTheme.colorScheme.primary
-                )
-            }
-            IconButton(onClick = onExportClick) {
-                Icon(
-                    imageVector = Icons.Default.FileDownload,
-                    contentDescription = "Export Excel",
                     tint = MaterialTheme.colorScheme.primary
                 )
             }
@@ -289,7 +322,7 @@ fun YearSelectionGrid(
                                 YearGridCard(
                                     year = y,
                                     recordsCount = stats?.count ?: 0,
-                                    lastUpdated = stats?.lastUpdated ?: "-",
+                                    lastUpdated = DateUtils.formatDateTime(stats?.lastUpdated),
                                     onClick = { onYearClick(y) },
                                     modifier = Modifier.weight(1f)
                                 )
@@ -327,7 +360,7 @@ fun YearSelectionGrid(
                                 YearGridCard(
                                     year = y,
                                     recordsCount = stats?.count ?: 0,
-                                    lastUpdated = stats?.lastUpdated ?: "-",
+                                    lastUpdated = DateUtils.formatDateTime(stats?.lastUpdated),
                                     onClick = { onYearClick(y) },
                                     modifier = Modifier.weight(1f)
                                 )
@@ -451,6 +484,8 @@ fun ArchiveListContentOnly(
     onSearchQueryChange: (String) -> Unit,
     onFilterChange: (String) -> Unit,
     onArchiveClick: (String) -> Unit,
+    onImportClick: () -> Unit,
+    onExportClick: () -> Unit
 ) {
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
@@ -472,6 +507,7 @@ fun ArchiveListContentOnly(
                 ActiveFilterSummary(selectedYears = uiState.selectedYears.sortedDescending())
                 ArchiveSearchBar(query = uiState.searchQuery, onQueryChange = onSearchQueryChange)
                 DocTypeFilterRow(selectedFilter = uiState.selectedFilter, onFilterChange = onFilterChange)
+                ExcelActionButtons(onImportClick = onImportClick, onExportClick = onExportClick)
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
@@ -491,6 +527,8 @@ fun ArchiveListContentOnly(
                 ArchiveSearchBar(query = uiState.searchQuery, onQueryChange = onSearchQueryChange)
                 Spacer(modifier = Modifier.height(12.dp))
                 DocTypeFilterRow(selectedFilter = uiState.selectedFilter, onFilterChange = onFilterChange)
+                Spacer(modifier = Modifier.height(12.dp))
+                ExcelActionButtons(onImportClick = onImportClick, onExportClick = onExportClick)
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
@@ -498,6 +536,36 @@ fun ArchiveListContentOnly(
                 archives = archives,
                 onArchiveClick = onArchiveClick
             )
+        }
+    }
+}
+
+@Composable
+fun ExcelActionButtons(onImportClick: () -> Unit, onExportClick: () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        OutlinedButton(
+            onClick = onImportClick,
+            modifier = Modifier.weight(1f),
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary)
+        ) {
+            Icon(Icons.Default.FileUpload, contentDescription = null, modifier = Modifier.size(18.dp))
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Import Excel", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+        }
+        Button(
+            onClick = onExportClick,
+            modifier = Modifier.weight(1f),
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+        ) {
+            Icon(Icons.Default.FileDownload, contentDescription = null, modifier = Modifier.size(18.dp))
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Export Excel", fontSize = 12.sp, fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -597,28 +665,34 @@ fun ArchiveResultList(
     archives: List<ArchiveDocument>,
     onArchiveClick: (String) -> Unit
 ) {
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = 16.dp),
+    val scrollState = rememberScrollState()
+    
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .horizontalScroll(scrollState)
     ) {
-        item {
-            ArchiveTableHeader()
-        }
+        ArchiveTableHeader()
+        
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(bottom = 16.dp),
+        ) {
+            items(archives.size) { index ->
+                val archive = archives[index]
+                ArchiveListItemCard(
+                    no = index + 1,
+                    archive = archive,
+                    onClick = { onArchiveClick(archive.id) }
+                )
+            }
 
-        items(archives.size) { index ->
-            val archive = archives[index]
-            ArchiveListItemCard(
-                no = index + 1,
-                archive = archive,
-                onClick = { onArchiveClick(archive.id) }
-            )
-        }
+            if (archives.isEmpty()) {
+                item { EmptyArchiveSearchResults() }
+            }
 
-        if (archives.isEmpty()) {
-            item { EmptyArchiveSearchResults() }
+            item { Spacer(modifier = Modifier.height(88.dp)) }
         }
-
-        item { Spacer(modifier = Modifier.height(88.dp)) }
     }
 }
 
@@ -676,7 +750,9 @@ fun ArchiveListScreenPreview() {
             ),
             onSearchQueryChange = {},
             onFilterChange = {},
-            onArchiveClick = {}
+            onArchiveClick = {},
+            onImportClick = {},
+            onExportClick = {}
         )
     }
 }

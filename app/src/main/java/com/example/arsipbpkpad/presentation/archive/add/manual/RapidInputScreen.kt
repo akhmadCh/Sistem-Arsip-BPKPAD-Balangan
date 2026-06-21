@@ -635,7 +635,10 @@ fun RapidInputForm(
                     keyboardType = KeyboardType.Number,
                     imeAction = ImeAction.Done
                 ),
-                keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                keyboardActions = KeyboardActions(onDone = { 
+                    focusManager.clearFocus()
+                    onAddOrUpdateClick()
+                }),
                 placeholder = stringResource(R.string.placeholder_nominal)
             )
 

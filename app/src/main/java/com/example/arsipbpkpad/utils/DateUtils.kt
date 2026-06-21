@@ -15,4 +15,20 @@ object DateUtils {
         // Convert YYYY-MM-DD to DD-MM-YYYY
         return "${parts[2]}-${parts[1]}-${parts[0]}"
     }
+
+    /**
+     * Formats an ISO date string to a human-readable format DD-MM-YYYY HH:mm.
+     */
+    fun formatDateTime(isoString: String?): String {
+        if (isoString.isNullOrBlank() || isoString == "-") return "-"
+        return try {
+            val datePart = isoString.substringBefore("T")
+            val timePart = isoString.substringAfter("T").substringBefore(".")
+            val formattedDate = formatForDisplay(datePart)
+            val formattedTime = timePart.substringBeforeLast(":") // Get HH:mm
+            "$formattedDate $formattedTime"
+        } catch (e: Exception) {
+            isoString
+        }
+    }
 }
