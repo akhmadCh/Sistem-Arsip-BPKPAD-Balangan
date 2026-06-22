@@ -24,7 +24,12 @@ object SupabaseModule {
             supabaseKey = BuildConfig.SUPABASE_KEY
         ) {
             install(Postgrest)
-            install(Auth)
+            install(Auth) {
+                // Ensure session persistence for up to 30 days
+                // Session is handled by Supabase Auth internally, 
+                // but we can ensure auto-refresh is on.
+                alwaysAutoRefresh = true
+            }
             install(Storage)
         }
     }

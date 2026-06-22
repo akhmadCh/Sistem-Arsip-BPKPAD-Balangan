@@ -3,9 +3,9 @@ package com.example.arsipbpkpad.presentation.auth
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import com.example.arsipbpkpad.domain.repository.AuthRepository
+import com.example.arsipbpkpad.domain.model.DomainResult
 import io.github.jan.supabase.SupabaseClient
-import io.github.jan.supabase.auth.auth
-import io.github.jan.supabase.auth.providers.builtin.Email
 import io.ktor.client.plugins.HttpRequestTimeoutException
 import io.ktor.client.plugins.ResponseException
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,8 +16,9 @@ import java.net.UnknownHostException
 import javax.inject.Inject
 
 data class LoginUiState(
-    val email: String = "admin123@balangankab.go.id", // For testing only
-    val password: String = "arsiparis321", // For testing only
+    val email: String = "",
+    val password: String = "",
+    val rememberMe: Boolean = false,
     val isLoading: Boolean = false,
     val isLoginSuccessful: Boolean = false,
     val errorMessage: String? = null
@@ -25,7 +26,7 @@ data class LoginUiState(
 
 @HiltViewModel
 class LoginViewModel @Inject constructor(
-    private val supabase: SupabaseClient
+    val authRepository: AuthRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LoginUiState())
@@ -39,9 +40,14 @@ class LoginViewModel @Inject constructor(
         _uiState.update { it.copy(password = password) }
     }
 
+    fun onRememberMeChange(checked: Boolean) {
+        _uiState.update { it.copy(rememberMe = checked) }
+    }
+
     fun authenticateAdmin() {
         val email = _uiState.value.email
         val password = _uiState.value.password
+        val rememberMe = _uiState.value.rememberMe
 
         if (email.isBlank() || password.isBlank()) {
             _uiState.update { it.copy(errorMessage = "Email dan password tidak boleh kosong.") }
@@ -50,26 +56,15 @@ class LoginViewModel @Inject constructor(
 
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
-            try {
-                supabase.auth.signInWith(Email) {
-                    this.email = email
-                    this.password = password
+            val result = authRepository.login(email, password, rememberMe)
+            
+            when (result) {
+                is DomainResult.Success -> {
+                    _uiState.update { it.copy(isLoading = false, isLoginSuccessful = true) }
                 }
-                _uiState.update { it.copy(isLoading = false, isLoginSuccessful = true) }
-            } catch (e: Exception) {
-                val userFriendlyMessage = when (e) {
-                    is UnknownHostException, is HttpRequestTimeoutException -> 
-                        "Koneksi terputus. Silakan periksa jaringan Anda."
-                    is ResponseException -> {
-                        if (e.response.status.value == 400) {
-                            "Email atau password yang Anda masukkan salah."
-                        } else {
-                            "Terjadi kesalahan pada server. Silakan coba lagi nanti."
-                        }
-                    }
-                    else -> "Gagal masuk: ${e.localizedMessage ?: "Kesalahan tidak dikenal"}"
+                is DomainResult.Error -> {
+                    _uiState.update { it.copy(isLoading = false, errorMessage = result.message) }
                 }
-                _uiState.update { it.copy(isLoading = false, errorMessage = userFriendlyMessage) }
             }
         }
     }

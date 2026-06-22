@@ -103,6 +103,7 @@ fun RapidInputScreen(
     onNavigateBack: () -> Unit,
     onNavigateToScan: () -> Unit,
     onNavigateToBottomNav: (BottomNavItem) -> Unit,
+    userRole: com.example.arsipbpkpad.domain.model.UserRole = com.example.arsipbpkpad.domain.model.UserRole.UNKNOWN,
     viewModel: RapidInputViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -229,7 +230,8 @@ fun RapidInputScreen(
                     }
                 },
                 onExitClick = onNavigateBack,
-                onNavigateToBottomNav = onNavigateToBottomNav
+                onNavigateToBottomNav = onNavigateToBottomNav,
+                userRole = userRole
             )
         },
         containerColor = MaterialTheme.colorScheme.background
@@ -438,7 +440,8 @@ fun RapidInputBottomBar(
     isLoading: Boolean,
     onUploadClick: () -> Unit,
     onExitClick: () -> Unit,
-    onNavigateToBottomNav: (BottomNavItem) -> Unit
+    onNavigateToBottomNav: (BottomNavItem) -> Unit,
+    userRole: com.example.arsipbpkpad.domain.model.UserRole = com.example.arsipbpkpad.domain.model.UserRole.UNKNOWN
 ) {
     Column {
         Surface(
@@ -492,6 +495,7 @@ fun RapidInputBottomBar(
         }
         com.example.arsipbpkpad.presentation.components.BpkpadBottomNavigation(
             currentRoute = BottomNavItem.ADD.route,
+            userRole = userRole,
             onNavigate = onNavigateToBottomNav
         )
     }

@@ -6,7 +6,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -14,6 +14,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import com.example.arsipbpkpad.R
+import com.example.arsipbpkpad.domain.model.UserRole
 import com.example.arsipbpkpad.presentation.analytics.AnalyticsScreen
 import com.example.arsipbpkpad.presentation.archive.add.manual.RapidInputScreen
 import com.example.arsipbpkpad.presentation.archive.add.manual.RapidInputUiEvent
@@ -21,16 +22,22 @@ import com.example.arsipbpkpad.presentation.archive.add.manual.RapidInputViewMod
 import com.example.arsipbpkpad.presentation.archive.add.manual.StagingBoxListScreen
 import com.example.arsipbpkpad.presentation.archive.detail.ArchiveDetailScreen
 import com.example.arsipbpkpad.presentation.archive.list.ArchiveListScreen
-import com.example.arsipbpkpad.presentation.home.screen.HomeScreen
 import com.example.arsipbpkpad.presentation.auth.screen.LoginScreen
+import com.example.arsipbpkpad.presentation.home.screen.HomeScreen
 import com.example.arsipbpkpad.presentation.scan.ScanScreen
 
 @Composable
 fun AppNavHost(
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
-    startDestination: String = Screen.Login.route
+    authViewModel: com.example.arsipbpkpad.presentation.auth.LoginViewModel = hiltViewModel()
 ) {
+    val authRepository = authViewModel.authRepository
+    val isUserLoggedIn by authRepository.isUserLoggedIn.collectAsStateWithLifecycle()
+    val currentUserRole by authRepository.currentUserRole.collectAsStateWithLifecycle()
+    
+    val startDestination = if (isUserLoggedIn) Screen.Home.route else Screen.Login.route
+
     val archiveFlowRoute = stringResource(R.string.route_archive_flow)
     val navHomeId = stringResource(R.string.nav_home_id)
     val navArchiveId = stringResource(R.string.nav_archive_id)
@@ -57,6 +64,7 @@ fun AppNavHost(
 
         composable(Screen.Home.route) {
             HomeScreen(
+                userRole = currentUserRole,
                 onNavigateToArchiveList = { year ->
                     navController.navigate(Screen.ArchiveList.createRoute(year))
                 },
@@ -64,16 +72,29 @@ fun AppNavHost(
                     navController.navigate(Screen.ArchiveDetail.createRoute(archiveId))
                 },
                 onNavigateToStagingBoxList = {
-                    navController.navigate(Screen.StagingBoxList.route)
+                    if (currentUserRole != UserRole.KASSUBAG) {
+                        navController.navigate(Screen.StagingBoxList.route)
+                    }
                 },
                 onNavigateToRapidInput = { sessionId ->
-                    navController.navigate(Screen.RapidInput.createRoute(sessionId))
+                    if (currentUserRole != UserRole.KASSUBAG) {
+                        navController.navigate(Screen.RapidInput.createRoute(sessionId))
+                    }
                 },
                 onNavigateToAnalytics = {
-                    navController.navigate(Screen.Analytics.route)
+                    if (currentUserRole != UserRole.ARSIPARIS) {
+                        navController.navigate(Screen.Analytics.route)
+                    }
                 },
                 onNavigateToScan = {
-                    navController.navigate(Screen.Scan.route)
+                    if (currentUserRole != UserRole.KASSUBAG) {
+                        navController.navigate(Screen.Scan.route)
+                    }
+                },
+                onLogout = {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(0) { inclusive = true }
+                    }
                 }
             )
         }
@@ -99,16 +120,21 @@ fun AppNavHost(
 
                 ArchiveListScreen(
                     year = year,
+                    userRole = currentUserRole,
                     viewModel = archiveListViewModel,
                     stagingViewModel = rapidInputViewModel,
                     onNavigateToDetail = { archiveId ->
                         navController.navigate(Screen.ArchiveDetail.createRoute(archiveId))
                     },
                     onNavigateToRapidInput = {
-                        navController.navigate(Screen.RapidInput.route)
+                        if (currentUserRole != UserRole.KASSUBAG) {
+                            navController.navigate(Screen.RapidInput.route)
+                        }
                     },
                     onNavigateToScan = {
-                        navController.navigate(Screen.Scan.route)
+                        if (currentUserRole != UserRole.KASSUBAG) {
+                            navController.navigate(Screen.Scan.route)
+                        }
                     },
                     onNavigateBack = {
                         navController.popBackStack()
@@ -117,8 +143,16 @@ fun AppNavHost(
                         when (item.route) {
                             navHomeId -> navController.navigate(Screen.Home.route)
                             navArchiveId -> { /* Already here */ }
-                            navAddId -> navController.navigate(Screen.StagingBoxList.route)
-                            navAnalyticsId -> navController.navigate(Screen.Analytics.route)
+                            navAddId -> {
+                                if (currentUserRole != UserRole.KASSUBAG) {
+                                    navController.navigate(Screen.StagingBoxList.route)
+                                }
+                            }
+                            navAnalyticsId -> {
+                                if (currentUserRole != UserRole.ARSIPARIS) {
+                                    navController.navigate(Screen.Analytics.route)
+                                }
+                            }
                         }
                     }
                 )
@@ -133,17 +167,25 @@ fun AppNavHost(
                         navController.navigate(Screen.ArchiveDetail.createRoute(id))
                     },
                     onNavigateToEdit = { id ->
-                        navController.navigate(Screen.EditArchive.createRoute(id))
+                        if (currentUserRole != UserRole.KASSUBAG) {
+                            navController.navigate(Screen.EditArchive.createRoute(id))
+                        }
                     }
                 )
             }
 
             composable(Screen.StagingBoxList.route) { entry ->
+                if (currentUserRole == UserRole.KASSUBAG) {
+                    navController.popBackStack()
+                    return@composable
+                }
+                
                 val rapidInputViewModel: RapidInputViewModel = hiltViewModel(
                     remember(entry) { navController.getBackStackEntry(archiveFlowRoute) }
                 )
                 StagingBoxListScreen(
                     viewModel = rapidInputViewModel,
+                    userRole = currentUserRole,
                     onNavigateToRapidInput = { sessionId ->
                         navController.navigate(Screen.RapidInput.createRoute(sessionId))
                     },
@@ -153,13 +195,22 @@ fun AppNavHost(
                             navHomeId -> navController.navigate(Screen.Home.route)
                             navArchiveId -> navController.navigate(archiveFlowRoute)
                             navAddId -> { /* Already here */ }
-                            navAnalyticsId -> navController.navigate(Screen.Analytics.route)
+                            navAnalyticsId -> {
+                                if (currentUserRole != UserRole.ARSIPARIS) {
+                                    navController.navigate(Screen.Analytics.route)
+                                }
+                            }
                         }
                     }
                 )
             }
 
             composable(Screen.RapidInput.route) { entry ->
+                if (currentUserRole == UserRole.KASSUBAG) {
+                    navController.popBackStack()
+                    return@composable
+                }
+                
                 val sessionId = entry.arguments?.getString(sessionIdKey) ?: ""
                 val flowEntry = remember(entry) { navController.getBackStackEntry(archiveFlowRoute) }
                 val rapidInputViewModel: RapidInputViewModel = hiltViewModel(flowEntry)
@@ -184,6 +235,7 @@ fun AppNavHost(
 
                 RapidInputScreen(
                     sessionId = sessionId,
+                    userRole = currentUserRole,
                     onNavigateBack = { navController.popBackStack() },
                     onNavigateToScan = {
                         navController.navigate(Screen.Scan.route)
@@ -193,7 +245,11 @@ fun AppNavHost(
                             navHomeId -> navController.navigate(Screen.Home.route)
                             navArchiveId -> navController.navigate(archiveFlowRoute)
                             navAddId -> navController.navigate(Screen.StagingBoxList.route)
-                            navAnalyticsId -> navController.navigate(Screen.Analytics.route)
+                            navAnalyticsId -> {
+                                if (currentUserRole != UserRole.ARSIPARIS) {
+                                    navController.navigate(Screen.Analytics.route)
+                                }
+                            }
                         }
                     },
                     viewModel = rapidInputViewModel
@@ -208,6 +264,11 @@ fun AppNavHost(
                     }
                 )
             ) { entry ->
+                if (currentUserRole == UserRole.KASSUBAG) {
+                    navController.popBackStack()
+                    return@composable
+                }
+                
                 val rapidInputViewModel: RapidInputViewModel = hiltViewModel()
 
                 val ocrResult by entry.savedStateHandle.getStateFlow<com.example.arsipbpkpad.domain.model.ParsedMetadata?>(ocrResultKey, null).collectAsStateWithLifecycle()
@@ -221,6 +282,7 @@ fun AppNavHost(
 
                 RapidInputScreen(
                     sessionId = "",
+                    userRole = currentUserRole,
                     onNavigateBack = { navController.popBackStack() },
                     onNavigateToScan = {
                         navController.navigate(Screen.Scan.route)
@@ -230,7 +292,11 @@ fun AppNavHost(
                             navHomeId -> navController.navigate(Screen.Home.route)
                             navArchiveId -> navController.navigate(archiveFlowRoute)
                             navAddId -> navController.navigate(Screen.StagingBoxList.route)
-                            navAnalyticsId -> navController.navigate(Screen.Analytics.route)
+                            navAnalyticsId -> {
+                                if (currentUserRole != UserRole.ARSIPARIS) {
+                                    navController.navigate(Screen.Analytics.route)
+                                }
+                            }
                         }
                     },
                     viewModel = rapidInputViewModel
@@ -239,6 +305,11 @@ fun AppNavHost(
         }
 
         composable(Screen.Scan.route) {
+            if (currentUserRole == UserRole.KASSUBAG) {
+                navController.popBackStack()
+                return@composable
+            }
+            
             ScanScreen(
                 onNavigateBack = { navController.popBackStack() },
                 onResultDispatched = { metadata ->
@@ -259,12 +330,22 @@ fun AppNavHost(
         }
 
         composable(Screen.Analytics.route) {
+            if (currentUserRole == UserRole.ARSIPARIS) {
+                navController.popBackStack()
+                return@composable
+            }
+            
             AnalyticsScreen(
+                userRole = currentUserRole,
                 onNavigateToBottomNav = { item ->
                     when (item.route) {
                         navHomeId -> navController.navigate(Screen.Home.route)
                         navArchiveId -> navController.navigate(archiveFlowRoute)
-                        navAddId -> navController.navigate(Screen.StagingBoxList.route)
+                        navAddId -> {
+                            if (currentUserRole != UserRole.KASSUBAG) {
+                                navController.navigate(Screen.StagingBoxList.route)
+                            }
+                        }
                         navAnalyticsId -> { /* Already here */ }
                     }
                 }

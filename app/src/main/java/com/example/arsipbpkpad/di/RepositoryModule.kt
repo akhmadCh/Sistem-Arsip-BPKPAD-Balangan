@@ -12,6 +12,8 @@ import com.example.arsipbpkpad.domain.repository.StorageLocationRepository
 import com.example.arsipbpkpad.domain.repository.TransactionBundleRepository
 import com.example.arsipbpkpad.data.repository.OcrRepositoryImpl
 import com.example.arsipbpkpad.domain.repository.OcrRepository
+import com.example.arsipbpkpad.data.repository.AuthRepositoryImpl
+import com.example.arsipbpkpad.domain.repository.AuthRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -21,6 +23,12 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class RepositoryModule {
+    @Binds
+    @Singleton
+    abstract fun bindAuthRepository(
+        authRepositoryImpl: AuthRepositoryImpl
+    ): AuthRepository
+
     @Binds
     @Singleton
     abstract fun bindArchiveRepository(

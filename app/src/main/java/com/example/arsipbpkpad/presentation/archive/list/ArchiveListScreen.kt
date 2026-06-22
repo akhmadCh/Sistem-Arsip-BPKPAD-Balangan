@@ -80,9 +80,12 @@ import com.example.arsipbpkpad.presentation.components.StatusDialog
 import com.example.arsipbpkpad.ui.theme.ArsipBPKPADTheme
 import com.example.arsipbpkpad.utils.DateUtils
 
+import com.example.arsipbpkpad.domain.model.UserRole
+
 @Composable
 fun ArchiveListScreen(
     year: Int? = null,
+    userRole: UserRole = UserRole.UNKNOWN,
     viewModel: ArchiveListViewModel = hiltViewModel(),
     stagingViewModel: com.example.arsipbpkpad.presentation.archive.add.manual.RapidInputViewModel = hiltViewModel(),
     onNavigateToDetail: (String) -> Unit,
@@ -207,11 +210,12 @@ fun ArchiveListScreen(
         bottomBar = {
             BpkpadBottomNavigation(
                 currentRoute = BottomNavItem.ARCHIVE.route,
+                userRole = userRole,
                 onNavigate = onNavigateToBottomNav
             )
         },
         floatingActionButton = {
-            if (uiState.isFilterConfirmed) {
+            if (uiState.isFilterConfirmed && userRole != UserRole.KASSUBAG) {
                 BpkpadExpandableFAB(
                     onManualInputClick = { 
                         onNavigateToBottomNav(BottomNavItem.ADD)

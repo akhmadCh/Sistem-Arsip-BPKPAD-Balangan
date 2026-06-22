@@ -3,7 +3,6 @@ package com.example.arsipbpkpad.presentation.analytics
 import android.content.res.Configuration
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -55,6 +54,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.arsipbpkpad.R
+import com.example.arsipbpkpad.domain.model.UserRole
 import com.example.arsipbpkpad.presentation.components.BottomNavItem
 import com.example.arsipbpkpad.presentation.components.BpkpadBottomNavigation
 import com.example.arsipbpkpad.presentation.components.BpkpadTopAppBar
@@ -64,6 +64,7 @@ import java.util.Locale
 @Composable
 fun AnalyticsScreen(
     onNavigateToBottomNav: (BottomNavItem) -> Unit,
+    userRole: UserRole = UserRole.UNKNOWN,
     viewModel: AnalyticsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -71,6 +72,7 @@ fun AnalyticsScreen(
     if (!uiState.isFilterConfirmed) {
         AnalyticsFilterContent(
             uiState = uiState,
+            userRole = userRole,
             onYearToggle = { viewModel.onYearSelected(it) },
             onConfirmFilter = { viewModel.onConfirmFilter() },
             onNavigateBack = { onNavigateToBottomNav(BottomNavItem.HOME) },
@@ -79,6 +81,7 @@ fun AnalyticsScreen(
     } else {
         AnalyticsResultsContent(
             uiState = uiState,
+            userRole = userRole,
             onNavigateToBottomNav = onNavigateToBottomNav,
             onResetFilter = { viewModel.onResetFilter() }
         )
@@ -88,6 +91,7 @@ fun AnalyticsScreen(
 @Composable
 fun AnalyticsFilterContent(
     uiState: AnalyticsUiState,
+    userRole: UserRole,
     onYearToggle: (Int) -> Unit,
     onConfirmFilter: () -> Unit,
     onNavigateBack: () -> Unit,
@@ -103,11 +107,13 @@ fun AnalyticsFilterContent(
         bottomBar = {
             BpkpadBottomNavigation(
                 currentRoute = BottomNavItem.ANALYTICS.route,
+                userRole = userRole,
                 onNavigate = onNavigateToBottomNav
             )
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
+// ...
         if (isLandscape) {
             Row(
                 modifier = Modifier
@@ -458,6 +464,7 @@ fun AnalyticsYearCard(
 @Composable
 fun AnalyticsResultsContent(
     uiState: AnalyticsUiState,
+    userRole: UserRole,
     onNavigateToBottomNav: (BottomNavItem) -> Unit,
     onResetFilter: () -> Unit
 ) {
@@ -468,6 +475,7 @@ fun AnalyticsResultsContent(
         bottomBar = {
             BpkpadBottomNavigation(
                 currentRoute = BottomNavItem.ANALYTICS.route,
+                userRole = userRole,
                 onNavigate = onNavigateToBottomNav
             )
         },

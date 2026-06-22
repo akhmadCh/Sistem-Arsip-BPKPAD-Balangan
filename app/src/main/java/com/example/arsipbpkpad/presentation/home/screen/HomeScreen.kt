@@ -54,6 +54,10 @@ import com.example.arsipbpkpad.presentation.home.component.RecentArchiveTable
 import com.example.arsipbpkpad.presentation.home.component.SecondaryStatCard
 import com.example.arsipbpkpad.presentation.home.component.SectionHeader
 
+import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material3.IconButton
+import com.example.arsipbpkpad.domain.model.UserRole
+
 @Composable
 fun HomeScreen(
     onNavigateToArchiveList: (Int?) -> Unit,
@@ -62,35 +66,54 @@ fun HomeScreen(
     onNavigateToRapidInput: (String) -> Unit,
     onNavigateToAnalytics: () -> Unit,
     onNavigateToScan: () -> Unit,
+    onLogout: () -> Unit,
+    userRole: UserRole = UserRole.UNKNOWN,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     HomeContent(
         uiState = uiState,
+        userRole = userRole,
         onNavigateToArchiveList = onNavigateToArchiveList,
         onNavigateToDetail = onNavigateToDetail,
         onNavigateToStagingBoxList = onNavigateToStagingBoxList,
         onNavigateToRapidInput = onNavigateToRapidInput,
         onNavigateToAnalytics = onNavigateToAnalytics,
-        onNavigateToScan = onNavigateToScan
+        onNavigateToScan = onNavigateToScan,
+        onLogout = onLogout
     )
 }
 
 @Composable
 fun HomeContent(
     uiState: HomeUiState,
+    userRole: UserRole,
     onNavigateToArchiveList: (Int?) -> Unit,
     onNavigateToDetail: (String) -> Unit,
     onNavigateToStagingBoxList: () -> Unit,
     onNavigateToRapidInput: (String) -> Unit,
     onNavigateToAnalytics: () -> Unit,
-    onNavigateToScan: () -> Unit
+    onNavigateToScan: () -> Unit,
+    onLogout: () -> Unit
 ) {
     Scaffold(
-        topBar = { BpkpadTopAppBar() },
+        topBar = { 
+            BpkpadTopAppBar(
+                actions = {
+                    IconButton(onClick = onLogout) {
+                        Icon(
+                            imageVector = Icons.Default.Logout,
+                            contentDescription = "Logout",
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
+            ) 
+        },
         bottomBar = {
             HomeBottomNavigation(
+                userRole = userRole,
                 onNavigateToArchiveList = onNavigateToArchiveList,
                 onNavigateToStagingBoxList = onNavigateToStagingBoxList,
                 onNavigateToAnalytics = onNavigateToAnalytics
@@ -100,6 +123,7 @@ fun HomeContent(
     ) { paddingValues ->
         HomeMainList(
             uiState = uiState,
+            userRole = userRole,
             paddingValues = paddingValues,
             onNavigateToArchiveList = onNavigateToArchiveList,
             onNavigateToDetail = onNavigateToDetail,
@@ -110,12 +134,14 @@ fun HomeContent(
 
 @Composable
 fun HomeBottomNavigation(
+    userRole: UserRole,
     onNavigateToArchiveList: (Int?) -> Unit,
     onNavigateToStagingBoxList: () -> Unit,
     onNavigateToAnalytics: () -> Unit
 ) {
     BpkpadBottomNavigation(
         currentRoute = BottomNavItem.HOME.route,
+        userRole = userRole,
         onNavigate = { item ->
             when (item) {
                 BottomNavItem.HOME -> { /* Already here */ }
@@ -130,6 +156,7 @@ fun HomeBottomNavigation(
 @Composable
 fun HomeMainList(
     uiState: HomeUiState,
+    userRole: UserRole,
     paddingValues: androidx.compose.foundation.layout.PaddingValues,
     onNavigateToArchiveList: (Int?) -> Unit,
     onNavigateToDetail: (String) -> Unit,
@@ -156,7 +183,7 @@ fun HomeMainList(
                 Spacer(modifier = Modifier.height(8.dp))
                 HeaderSection()
                 
-                if (uiState.activeStagingBoxes.isNotEmpty()) {
+                if (userRole != UserRole.KASSUBAG && uiState.activeStagingBoxes.isNotEmpty()) {
                     val totalDocs = uiState.activeStagingBoxes.sumOf { it.itemCount }
                     val totalBoxes = uiState.activeStagingBoxes.size
                     StagingStatusCard(
@@ -202,7 +229,7 @@ fun HomeMainList(
         ) {
             item { HeaderSection() }
 
-            if (uiState.activeStagingBoxes.isNotEmpty()) {
+            if (userRole != UserRole.KASSUBAG && uiState.activeStagingBoxes.isNotEmpty()) {
                 item {
                     val totalDocs = uiState.activeStagingBoxes.sumOf { it.itemCount }
                     val totalBoxes = uiState.activeStagingBoxes.size
@@ -214,6 +241,7 @@ fun HomeMainList(
                     )
                 }
             }
+// ... rest of the file ...
 
             item { HomePrimaryStats(uiState) }
             item { HomeSecondaryStats(uiState) }

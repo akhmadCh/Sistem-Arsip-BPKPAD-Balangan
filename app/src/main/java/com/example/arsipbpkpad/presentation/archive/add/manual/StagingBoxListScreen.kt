@@ -72,6 +72,7 @@ import com.example.arsipbpkpad.presentation.components.StatusDialog
 @Composable
 fun StagingBoxListScreen(
     viewModel: RapidInputViewModel,
+    userRole: com.example.arsipbpkpad.domain.model.UserRole = com.example.arsipbpkpad.domain.model.UserRole.UNKNOWN,
     onNavigateToRapidInput: (String) -> Unit,
     onNavigateBack: () -> Unit,
     onNavigateToBottomNav: (BottomNavItem) -> Unit
@@ -110,6 +111,7 @@ fun StagingBoxListScreen(
         bottomBar = {
             BpkpadBottomNavigation(
                 currentRoute = BottomNavItem.ADD.route,
+                userRole = userRole,
                 onNavigate = onNavigateToBottomNav
             )
         },

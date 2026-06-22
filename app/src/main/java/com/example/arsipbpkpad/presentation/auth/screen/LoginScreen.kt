@@ -213,7 +213,8 @@ fun LoginScreen(
                             unfocusedContainerColor = Color.White,
                             focusedBorderColor = PrimaryGreen
                         ),
-                        placeholder = { Text("Email Anda") }
+                        placeholder = { Text("Email Anda") },
+                        isError = uiState.errorMessage != null
                     )
                 }
 
@@ -256,7 +257,8 @@ fun LoginScreen(
                             unfocusedContainerColor = Color.White,
                             focusedBorderColor = PrimaryGreen
                         ),
-                        placeholder = { Text("Password Anda") }
+                        placeholder = { Text("Password Anda") },
+                        isError = uiState.errorMessage != null
                     )
                 }
 
@@ -269,8 +271,8 @@ fun LoginScreen(
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Checkbox(
-                            checked = rememberMe,
-                            onCheckedChange = { rememberMe = it },
+                            checked = uiState.rememberMe,
+                            onCheckedChange = { viewModel.onRememberMeChange(it) },
                             colors = CheckboxDefaults.colors(checkedColor = PrimaryGreen)
                         )
                         Text(

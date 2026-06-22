@@ -19,6 +19,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.arsipbpkpad.R
 
+import androidx.compose.runtime.remember
+import com.example.arsipbpkpad.domain.model.UserRole
+
 enum class BottomNavItem(val route: String) {
     HOME("home"),
     ARCHIVE("archive"),
@@ -29,51 +32,51 @@ enum class BottomNavItem(val route: String) {
 @Composable
 fun BpkpadBottomNavigation(
     currentRoute: String?,
+    userRole: UserRole = UserRole.UNKNOWN,
     onNavigate: (BottomNavItem) -> Unit
 ) {
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
     
+    val items = remember(userRole) {
+        BottomNavItem.entries.filter { item ->
+            when (item) {
+                BottomNavItem.ADD -> userRole != UserRole.KASSUBAG
+                BottomNavItem.ANALYTICS -> userRole != UserRole.ARSIPARIS
+                else -> true
+            }
+        }
+    }
+
     NavigationBar(
         modifier = if (isLandscape) Modifier.height(64.dp) else Modifier,
         containerColor = MaterialTheme.colorScheme.surface,
         contentColor = MaterialTheme.colorScheme.onSurface
     ) {
-        NavigationBarItem(
-            selected = currentRoute == BottomNavItem.HOME.route,
-            onClick = { onNavigate(BottomNavItem.HOME) },
-            icon = { Icon(Icons.Default.Home, contentDescription = null) },
-            label = { if (!isLandscape) Text(stringResource(R.string.nav_home)) },
-            colors = NavigationBarItemDefaults.colors(
-                indicatorColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f)
+        items.forEach { item ->
+            val icon = when (item) {
+                BottomNavItem.HOME -> Icons.Default.Home
+                BottomNavItem.ARCHIVE -> Icons.AutoMirrored.Filled.List
+                BottomNavItem.ADD -> Icons.Default.Add
+                BottomNavItem.ANALYTICS -> Icons.Default.Info
+            }
+            
+            val label = when (item) {
+                BottomNavItem.HOME -> R.string.nav_home
+                BottomNavItem.ARCHIVE -> R.string.nav_archive
+                BottomNavItem.ADD -> R.string.nav_add
+                BottomNavItem.ANALYTICS -> R.string.nav_analytics
+            }
+
+            NavigationBarItem(
+                selected = currentRoute == item.route,
+                onClick = { onNavigate(item) },
+                icon = { Icon(icon, contentDescription = null) },
+                label = { if (!isLandscape) Text(stringResource(label)) },
+                colors = NavigationBarItemDefaults.colors(
+                    indicatorColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f)
+                )
             )
-        )
-        NavigationBarItem(
-            selected = currentRoute == BottomNavItem.ARCHIVE.route,
-            onClick = { onNavigate(BottomNavItem.ARCHIVE) },
-            icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = null) },
-            label = { if (!isLandscape) Text(stringResource(R.string.nav_archive)) },
-            colors = NavigationBarItemDefaults.colors(
-                indicatorColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f)
-            )
-        )
-        NavigationBarItem(
-            selected = currentRoute == BottomNavItem.ADD.route,
-            onClick = { onNavigate(BottomNavItem.ADD) },
-            icon = { Icon(Icons.Default.Add, contentDescription = null) },
-            label = { if (!isLandscape) Text(stringResource(R.string.nav_add)) },
-            colors = NavigationBarItemDefaults.colors(
-                indicatorColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f)
-            )
-        )
-        NavigationBarItem(
-            selected = currentRoute == BottomNavItem.ANALYTICS.route,
-            onClick = { onNavigate(BottomNavItem.ANALYTICS) },
-            icon = { Icon(Icons.Default.Info, contentDescription = null) },
-            label = { if (!isLandscape) Text(stringResource(R.string.nav_analytics)) },
-            colors = NavigationBarItemDefaults.colors(
-                indicatorColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f)
-            )
-        )
+        }
     }
 }
