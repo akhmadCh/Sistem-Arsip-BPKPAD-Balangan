@@ -14,6 +14,13 @@ interface StagingRepository {
     suspend fun saveStagedBox(box: StagedBox)
     suspend fun deleteStagedBox(sessionId: String)
     suspend fun getStagedBoxById(sessionId: String): StagedBox?
+    suspend fun checkStagedBoxExists(
+        warehouse: String,
+        rack: String,
+        year: String,
+        box: String,
+        excludeSessionId: String? = null
+    ): Boolean
 
     // Archive Management
     fun getAllStagingArchives(): Flow<List<ArchiveDocument>>

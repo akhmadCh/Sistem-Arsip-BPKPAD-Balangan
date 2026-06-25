@@ -81,8 +81,10 @@ fun LoginScreen(
     }
 
     if (uiState.errorMessage != null) {
+        val isNetworkError = uiState.errorMessage!!.contains("internet", ignoreCase = true) || 
+                            uiState.errorMessage!!.contains("jaringan", ignoreCase = true)
         StatusDialog(
-            title = "Login Gagal",
+            title = if (isNetworkError) "Kesalahan Jaringan" else "Login Gagal",
             message = uiState.errorMessage!!,
             isSuccess = false,
             onDismiss = { viewModel.clearError() }

@@ -45,6 +45,22 @@ class StagingRepositoryImpl @Inject constructor(
         return stagingArchiveDao.getStagingBoxById(sessionId)?.toDomain()
     }
 
+    override suspend fun checkStagedBoxExists(
+        warehouse: String,
+        rack: String,
+        year: String,
+        box: String,
+        excludeSessionId: String?
+    ): Boolean {
+        return stagingArchiveDao.checkStagedBoxExists(
+            warehouse = warehouse,
+            rack = rack,
+            year = year,
+            box = box,
+            excludeSessionId = excludeSessionId
+        )
+    }
+
     override fun getAllStagingArchives(): Flow<List<ArchiveDocument>> {
         return stagingArchiveDao.getAllStagingArchives().map { entities ->
             entities.map { it.toDomain() }

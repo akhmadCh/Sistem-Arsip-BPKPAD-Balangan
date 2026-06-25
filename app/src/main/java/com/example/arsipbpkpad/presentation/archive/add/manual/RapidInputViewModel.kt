@@ -469,12 +469,27 @@ class RapidInputViewModel @Inject constructor(
             if (state.selectedRoom == null) errors["warehouse"] = "Gudang wajib dipilih"
             if (state.selectedShelf == null) errors["rack"] = "Nomor rak wajib dipilih"
             
-            if (state.typedBox.isBlank()) {
+            val typedBox = state.typedBox.trim()
+            if (typedBox.isBlank()) {
                 errors["box"] = "Nama Box wajib diisi"
-            } else if (state.selectedShelf != null) {
-                // Check duplicate box in the selected shelf
-                if (storageLocationRepository.checkBoxExists(state.selectedShelf.id, state.typedBox)) {
+            } else {
+                // 1. Check duplicate box in the selected shelf (Permanent Storage)
+                if (state.selectedShelf != null && storageLocationRepository.checkBoxExists(state.selectedShelf.id, typedBox)) {
                     errors["box"] = "Box dengan nomor ini sudah ada di rak tersebut"
+                }
+
+                // 2. Check duplicate in Staging Boxes (across warehouse, rack, year, box)
+                if (errors["box"] == null && state.selectedRoom != null && state.selectedShelf != null) {
+                    val duplicateExists = stagingRepository.checkStagedBoxExists(
+                        warehouse = state.selectedRoom.name,
+                        rack = state.selectedShelf.name,
+                        year = ctx.year,
+                        box = typedBox,
+                        excludeSessionId = state.currentSessionId
+                    )
+                    if (duplicateExists) {
+                        errors["box"] = "Box ini sudah ada pada gudang, rak, dan tahun yang sama"
+                    }
                 }
             }
             
@@ -496,7 +511,7 @@ class RapidInputViewModel @Inject constructor(
                     sessionId = sessionId,
                     warehouse = state.selectedRoom!!.name,
                     rack = state.selectedShelf!!.name,
-                    box = state.typedBox,
+                    box = typedBox,
                     year = ctx.year
                 )
                 stagingRepository.saveStagedBox(updatedBox)

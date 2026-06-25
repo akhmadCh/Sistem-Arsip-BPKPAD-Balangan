@@ -150,6 +150,35 @@ class RapidInputViewModelTest {
     }
 
     @Test
+    fun `BOX_009 - validate duplicate staging box`() = runTest {
+        val room = Room("R1", "Gedung A")
+        val shelf = Shelf("S1", "Rak 1", "R1")
+        
+        // Permanent storage doesn't have it
+        coEvery { storageLocationRepository.checkBoxExists(any(), any()) } returns false
+        // But another staging session HAS it
+        coEvery { 
+            stagingRepository.checkStagedBoxExists(
+                warehouse = "Gedung A",
+                rack = "Rak 1",
+                year = "2026",
+                box = "B1",
+                excludeSessionId = any()
+            ) 
+        } returns true
+        
+        viewModel.onEvent(RapidInputUiEvent.OnRoomSelected(room))
+        viewModel.onEvent(RapidInputUiEvent.OnShelfSelected(shelf))
+        viewModel.onEvent(RapidInputUiEvent.OnBoxLocationChange("B1"))
+        viewModel.onEvent(RapidInputUiEvent.OnYearChange("2026"))
+        viewModel.onEvent(RapidInputUiEvent.OnConfirmBoxContext)
+        advanceUntilIdle()
+        
+        val state = viewModel.uiState.value
+        assertEquals("Box ini sudah ada pada gudang, rak, dan tahun yang sama", state.validationErrors["box"])
+    }
+
+    @Test
     fun `INP_011 - test auto-bundle SP2D, SPM, and SPJ`() = runTest {
         // Setup valid state
         viewModel.onEvent(RapidInputUiEvent.OnWarehouseChange("Gedung A"))
