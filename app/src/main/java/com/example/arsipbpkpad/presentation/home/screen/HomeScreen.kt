@@ -42,6 +42,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.arsipbpkpad.R
 import com.example.arsipbpkpad.domain.model.UserRole
+import com.example.arsipbpkpad.domain.model.canMutateArchive
 import com.example.arsipbpkpad.presentation.components.BottomNavItem
 import com.example.arsipbpkpad.presentation.components.BpkpadBottomNavigation
 import com.example.arsipbpkpad.presentation.components.BpkpadTopAppBar
@@ -175,7 +176,7 @@ fun HomeMainList(
     ) {
         item { HeaderSection() }
 
-        if (userRole == UserRole.ARSIPARIS && uiState.activeStagingBoxes.isNotEmpty()) {
+        if (userRole.canMutateArchive() && uiState.activeStagingBoxes.isNotEmpty()) {
             item {
                 val totalDocs = uiState.activeStagingBoxes.sumOf { it.itemCount }
                 val totalBoxes = uiState.activeStagingBoxes.size

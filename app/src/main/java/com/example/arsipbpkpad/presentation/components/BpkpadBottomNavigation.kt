@@ -21,6 +21,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.arsipbpkpad.R
 import com.example.arsipbpkpad.domain.model.UserRole
+import com.example.arsipbpkpad.domain.model.canMutateArchive
 
 enum class BottomNavItem(val route: String) {
     HOME("home"),
@@ -43,7 +44,7 @@ fun BpkpadBottomNavigation(
         BottomNavItem.entries.filter { item ->
             when (item) {
                 BottomNavItem.ADD -> userRole != UserRole.KASSUBAG
-                BottomNavItem.ANALYTICS -> userRole != UserRole.ARSIPARIS
+                BottomNavItem.ANALYTICS -> userRole.canMutateArchive()
                 else -> true
             }
         }

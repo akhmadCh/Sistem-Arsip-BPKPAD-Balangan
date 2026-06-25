@@ -57,6 +57,7 @@ import com.example.arsipbpkpad.domain.model.BoxDetails
 import com.example.arsipbpkpad.domain.model.Room
 import com.example.arsipbpkpad.domain.model.Shelf
 import com.example.arsipbpkpad.domain.model.UserRole
+import com.example.arsipbpkpad.domain.model.canMutateArchive
 import com.example.arsipbpkpad.presentation.components.BottomNavItem
 import com.example.arsipbpkpad.presentation.components.BpkpadBottomNavigation
 import com.example.arsipbpkpad.presentation.components.BpkpadTopAppBar

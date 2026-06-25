@@ -58,6 +58,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.arsipbpkpad.R
 import com.example.arsipbpkpad.domain.model.ArchiveDocument
+import com.example.arsipbpkpad.domain.model.UserRole
+import com.example.arsipbpkpad.domain.model.canMutateArchive
 import com.example.arsipbpkpad.presentation.components.BpkpadTopAppBar
 import com.example.arsipbpkpad.presentation.components.DocStatusBadge
 import com.example.arsipbpkpad.ui.theme.ArsipBPKPADTheme
@@ -67,7 +69,7 @@ import java.util.Locale
 @Composable
 fun ArchiveDetailScreen(
     archiveId: String,
-    userRole: com.example.arsipbpkpad.domain.model.UserRole = com.example.arsipbpkpad.domain.model.UserRole.UNKNOWN,
+    userRole: UserRole = UserRole.UNKNOWN,
     onNavigateBack: () -> Unit,
     onNavigateToArchive: (String) -> Unit,
     onNavigateToEdit: (String) -> Unit,
@@ -93,7 +95,7 @@ fun ArchiveDetailScreen(
 @Composable
 fun ArchiveDetailContent(
     state: ArchiveDetailState,
-    userRole: com.example.arsipbpkpad.domain.model.UserRole,
+    userRole: UserRole,
     onNavigateBack: () -> Unit,
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit,
@@ -220,7 +222,7 @@ fun ArchiveDetailMainList(
             }
         }
 
-        if (userRole == com.example.arsipbpkpad.domain.model.UserRole.ARSIPARIS) {
+        if (userRole.canMutateArchive()) {
             item {
                 DetailActionButtons(
                     onEditClick = onEditClick,
