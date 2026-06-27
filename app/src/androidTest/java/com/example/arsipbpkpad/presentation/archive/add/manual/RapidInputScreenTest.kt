@@ -8,7 +8,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import com.example.arsipbpkpad.domain.model.DocCopyType
-import com.example.arsipbpkpad.domain.model.DocType
+import com.example.arsipbpkpad.domain.model.DocumentTypeDefaults
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -96,7 +96,7 @@ class RapidInputScreenTest {
     fun testAutoBundleToggleShowsSpmField() {
         val viewModel = mockk<RapidInputViewModel>(relaxed = true)
         val state = MutableStateFlow(RapidInputUiState(
-            docType = DocType.SP2D,
+            docType = "SP2D",
             isAutoBundleEnabled = true
         ))
         every { viewModel.uiState } returns state

@@ -3,6 +3,7 @@ package com.example.arsipbpkpad.domain.usecase
 import com.example.arsipbpkpad.domain.model.ArchiveDocument
 import com.example.arsipbpkpad.domain.model.DomainResult
 import com.example.arsipbpkpad.domain.repository.ArchiveRepository
+import com.example.arsipbpkpad.domain.repository.DocumentTypeRepository
 import com.example.arsipbpkpad.domain.repository.StorageLocationRepository
 import com.example.arsipbpkpad.domain.service.ExcelService
 import java.io.InputStream
@@ -11,7 +12,8 @@ import javax.inject.Inject
 class ImportArchivesUseCase @Inject constructor(
     private val repository: ArchiveRepository,
     private val excelService: ExcelService,
-    private val storageLocationRepository: StorageLocationRepository
+    private val storageLocationRepository: StorageLocationRepository,
+    private val documentTypeRepository: DocumentTypeRepository
 ) {
     suspend operator fun invoke(inputStream: InputStream): DomainResult<Boolean> {
         return try {
@@ -49,6 +51,11 @@ class ImportArchivesUseCase @Inject constructor(
                         return DomainResult.Error("Gagal memproses lokasi pada baris $rowNum: ${locationResult.message}")
                     }
                 }
+            }
+
+            // Ensure all document types exist
+            finalArchives.map { it.type }.distinct().forEach { type ->
+                documentTypeRepository.ensureDocumentTypeExists(type)
             }
 
             return repository.saveArchives(finalArchives)

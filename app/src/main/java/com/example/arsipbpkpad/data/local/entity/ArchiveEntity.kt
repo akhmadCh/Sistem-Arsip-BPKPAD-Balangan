@@ -6,14 +6,13 @@ import com.example.arsipbpkpad.domain.model.ArchiveMetadata
 import com.example.arsipbpkpad.domain.model.DocCondition
 import com.example.arsipbpkpad.domain.model.DocCopyType
 import com.example.arsipbpkpad.domain.model.DocStatus
-import com.example.arsipbpkpad.domain.model.DocType
 
 @Entity(tableName = "archives")
 data class ArchiveEntity(
     @PrimaryKey
     val id: String,
     val boxSessionId: String? = null,
-    val type: DocType,
+    val type: String,
     val copyType: DocCopyType,
     val copyCount: Int,
     val documentNumber: String?,

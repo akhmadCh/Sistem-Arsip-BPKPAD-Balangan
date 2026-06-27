@@ -23,8 +23,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.arsipbpkpad.R
-import com.example.arsipbpkpad.ui.theme.DarkGreen
-import com.example.arsipbpkpad.ui.theme.ErrorRed
 import com.example.arsipbpkpad.ui.theme.SuccessGreen
 
 enum class DialogType {
@@ -38,6 +36,12 @@ fun StatusDialog(
     onDismiss: () -> Unit,
     isSuccess: Boolean? = true // true: success, false: error, null: warning
 ) {
+    val statusColor = when (isSuccess) {
+        true -> SuccessGreen
+        false -> MaterialTheme.colorScheme.error
+        else -> Color(0xFFFF9800) // Warning Amber
+    }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         icon = {
@@ -48,11 +52,7 @@ fun StatusDialog(
                     else -> Icons.Default.Warning
                 },
                 contentDescription = null,
-                tint = when (isSuccess) {
-                    true -> SuccessGreen
-                    false -> ErrorRed
-                    else -> Color(0xFFFF9800)
-                },
+                tint = statusColor,
                 modifier = Modifier.size(64.dp)
             )
         },
@@ -62,7 +62,8 @@ fun StatusDialog(
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                color = MaterialTheme.colorScheme.onSurface
             )
         },
         text = {
@@ -71,7 +72,8 @@ fun StatusDialog(
                 style = MaterialTheme.typography.bodyMedium,
                 textAlign = TextAlign.Center,
                 lineHeight = 20.sp,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         },
         confirmButton = {
@@ -79,7 +81,8 @@ fun StatusDialog(
                 onClick = onDismiss,
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = DarkGreen
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
                 ),
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -105,12 +108,20 @@ fun BpkpadConfirmDialog(
     onDismiss: () -> Unit,
     type: DialogType = DialogType.INFO
 ) {
-    val confirmButtonColor = when (type) {
+    val confirmButtonContainerColor = when (type) {
         DialogType.DESTRUCTIVE -> MaterialTheme.colorScheme.error
         DialogType.SUCCESS -> SuccessGreen
-        DialogType.ERROR -> ErrorRed
+        DialogType.ERROR -> MaterialTheme.colorScheme.error
         DialogType.WARNING -> Color(0xFFFF9800)
-        else -> DarkGreen
+        else -> MaterialTheme.colorScheme.primary
+    }
+
+    val confirmButtonContentColor = when (type) {
+        DialogType.DESTRUCTIVE -> MaterialTheme.colorScheme.onError
+        DialogType.SUCCESS -> Color.White
+        DialogType.ERROR -> MaterialTheme.colorScheme.onError
+        DialogType.WARNING -> Color.Black
+        else -> MaterialTheme.colorScheme.onPrimary
     }
 
     AlertDialog(
@@ -121,7 +132,8 @@ fun BpkpadConfirmDialog(
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                color = MaterialTheme.colorScheme.onSurface
             )
         },
         text = {
@@ -130,21 +142,24 @@ fun BpkpadConfirmDialog(
                 style = MaterialTheme.typography.bodyMedium,
                 textAlign = TextAlign.Center,
                 lineHeight = 20.sp,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         },
         confirmButton = {
             Button(
                 onClick = onConfirm,
-                colors = ButtonDefaults.buttonColors(containerColor = confirmButtonColor),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = confirmButtonContainerColor,
+                    contentColor = confirmButtonContentColor
+                ),
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
                     text = confirmText,
                     style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    fontWeight = FontWeight.Bold
                 )
             }
         },

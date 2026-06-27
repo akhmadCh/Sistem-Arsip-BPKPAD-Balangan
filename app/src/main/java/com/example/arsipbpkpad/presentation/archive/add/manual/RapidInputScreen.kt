@@ -85,13 +85,15 @@ import com.example.arsipbpkpad.domain.model.ArchiveDocument
 import com.example.arsipbpkpad.domain.model.ClassificationCode
 import com.example.arsipbpkpad.domain.model.DocCondition
 import com.example.arsipbpkpad.domain.model.DocCopyType
-import com.example.arsipbpkpad.domain.model.DocType
+import com.example.arsipbpkpad.domain.model.DocumentTypeDefaults
+import com.example.arsipbpkpad.domain.model.DocumentTypeDefaults.normalizeDocumentType
 import com.example.arsipbpkpad.domain.model.UserRole
 import com.example.arsipbpkpad.domain.model.canMutateArchive
 import com.example.arsipbpkpad.presentation.components.BottomNavItem
 import com.example.arsipbpkpad.presentation.components.BpkpadConfirmDialog
 import com.example.arsipbpkpad.presentation.components.BpkpadTopAppBar
 import com.example.arsipbpkpad.presentation.components.FormDropdownField
+import com.example.arsipbpkpad.presentation.components.FormEditableDropdownField
 import com.example.arsipbpkpad.presentation.components.FormTextField
 import com.example.arsipbpkpad.presentation.components.StatusDialog
 import com.example.arsipbpkpad.utils.CurrencyVisualTransformation
@@ -473,7 +475,7 @@ fun RapidInputBottomBar(
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
                 ) {
                     Text(
-                        text = if (stagedCount == 0) stringResource(R.string.btn_finish_back) else stringResource(R.string.btn_cancel_exit),
+                        text = if (stagedCount == 0) stringResource(R.string.btn_finish_back) else stringResource(R.string.btn_finish_back),
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -490,7 +492,7 @@ fun RapidInputBottomBar(
 @Composable
 fun RapidInputForm(
     uiState: RapidInputUiState,
-    onDocTypeChange: (DocType) -> Unit,
+    onDocTypeChange: (String) -> Unit,
     onAutoBundleToggle: (Boolean) -> Unit,
     onCopyTypeChange: (DocCopyType) -> Unit,
     onCopyCountChange: (String) -> Unit,
@@ -525,11 +527,12 @@ fun RapidInputForm(
             
             Spacer(modifier = Modifier.height(16.dp))
 
-            FormDropdownField(
+            FormEditableDropdownField(
                 label = stringResource(R.string.label_doc_type),
-                value = uiState.docType.name,
-                options = listOf("SP2D", "SPM", "SPP", "SPJ"),
-                onOptionSelected = { onDocTypeChange(DocType.valueOf(it)) },
+                value = uiState.docType,
+                options = uiState.availableDocTypes.map { it.name },
+                onValueChange = onDocTypeChange,
+                onOptionSelected = onDocTypeChange,
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -540,14 +543,15 @@ fun RapidInputForm(
                 onClick = onClassificationClick
             )
 
-            if (uiState.editingId == null && (uiState.docType == DocType.SP2D || uiState.docType == DocType.SPM)) {
+            val normalizedType = normalizeDocumentType(uiState.docType)
+            if (uiState.editingId == null && (normalizedType == DocumentTypeDefaults.SP2D || normalizedType == DocumentTypeDefaults.SPM)) {
                 AutoBundleCheckbox(
                     checked = uiState.isAutoBundleEnabled,
                     onCheckedChange = onAutoBundleToggle
                 )
             }
 
-            if (uiState.docType == DocType.SPJ && !uiState.isAutoBundleEnabled && uiState.editingId == null) {
+            if (normalizedType == DocumentTypeDefaults.SPJ && !uiState.isAutoBundleEnabled && uiState.editingId == null) {
                 Spacer(modifier = Modifier.height(8.dp))
                 val bundleOptions = listOf(stringResource(R.string.label_none)) + uiState.stagedBundles.map { it.name }
                 val selectedBundle = uiState.stagedBundles.find { it.id == uiState.selectedBundleId }
@@ -588,7 +592,7 @@ fun RapidInputForm(
                 )
             }
 
-            if (uiState.docType != DocType.SPJ || !uiState.isAutoBundleEnabled) {
+            if (normalizedType != DocumentTypeDefaults.SPJ || !uiState.isAutoBundleEnabled) {
                 FormTextField(
                     label = if (uiState.isAutoBundleEnabled) stringResource(R.string.label_doc_number_sp2d) else stringResource(R.string.label_doc_number),
                     value = uiState.documentNumber,
@@ -638,7 +642,7 @@ fun RapidInputForm(
                 label = stringResource(R.string.label_nominal),
                 value = uiState.nominal,
                 onValueChange = onNominalChange,
-                readOnly = uiState.selectedBundleId != null && uiState.docType == DocType.SPJ,
+                readOnly = uiState.selectedBundleId != null && normalizedType == DocumentTypeDefaults.SPJ,
                 visualTransformation = CurrencyVisualTransformation(),
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Number,
@@ -1165,7 +1169,7 @@ fun StagedItemRow(
     ) {
         ListItem(
             headlineContent = { 
-                StagedItemHeadline(type = doc.type.name, number = doc.documentNumber)
+                StagedItemHeadline(type = doc.type, number = doc.documentNumber)
             },
             supportingContent = { 
                 StagedItemSupporting(

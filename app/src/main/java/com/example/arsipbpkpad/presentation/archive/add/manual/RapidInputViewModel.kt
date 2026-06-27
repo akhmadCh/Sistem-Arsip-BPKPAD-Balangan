@@ -10,14 +10,19 @@ import com.example.arsipbpkpad.domain.model.ClassificationCode
 import com.example.arsipbpkpad.domain.model.DocCondition
 import com.example.arsipbpkpad.domain.model.DocCopyType
 import com.example.arsipbpkpad.domain.model.DocStatus
-import com.example.arsipbpkpad.domain.model.DocType
+import com.example.arsipbpkpad.domain.model.DocumentType
+import com.example.arsipbpkpad.domain.model.DocumentTypeDefaults
+import com.example.arsipbpkpad.domain.model.DocumentTypeDefaults.normalizeDocumentType
 import com.example.arsipbpkpad.domain.model.DomainConstants
 import com.example.arsipbpkpad.domain.model.DomainResult
 import com.example.arsipbpkpad.domain.model.ParsedMetadata
 import com.example.arsipbpkpad.domain.model.Room
 import com.example.arsipbpkpad.domain.model.Shelf
 import com.example.arsipbpkpad.domain.model.StagedBox
+import com.example.arsipbpkpad.domain.model.UserRole
 import com.example.arsipbpkpad.domain.repository.ArchiveRepository
+import com.example.arsipbpkpad.domain.repository.AuthRepository
+import com.example.arsipbpkpad.domain.repository.DocumentTypeRepository
 import com.example.arsipbpkpad.domain.repository.StagingRepository
 import com.example.arsipbpkpad.domain.repository.StorageLocationRepository
 import com.example.arsipbpkpad.domain.usecase.BulkInsertArchivesUseCase
@@ -55,7 +60,8 @@ data class RapidInputUiState(
     val stagedDocuments: List<ArchiveDocument> = emptyList(),
     val existingStagedBoxes: List<StagedBox> = emptyList(),
     // Form fields
-    val docType: DocType = DocType.SP2D,
+    val docType: String = DocumentTypeDefaults.SP2D,
+    val availableDocTypes: List<DocumentType> = emptyList(),
     val copyType: DocCopyType = DocCopyType.ORIGINAL,
     val copyCount: String = DomainConstants.DEFAULT_COPY_COUNT.toString(),
     val documentNumber: String = "",
@@ -110,7 +116,7 @@ sealed class RapidInputUiEvent {
     data class OnCreateShelf(val name: String) : RapidInputUiEvent()
     data class OnBoxLocationChange(val value: String) : RapidInputUiEvent()
 
-    data class OnDocTypeChange(val value: DocType) : RapidInputUiEvent()
+    data class OnDocTypeChange(val value: String) : RapidInputUiEvent()
     data class OnCopyTypeChange(val value: DocCopyType) : RapidInputUiEvent()
     data class OnCopyCountChange(val value: String) : RapidInputUiEvent()
     data class OnDocNumberChange(val value: String) : RapidInputUiEvent()
@@ -145,6 +151,8 @@ class RapidInputViewModel @Inject constructor(
     private val stagingRepository: StagingRepository,
     private val archiveRepository: ArchiveRepository,
     private val storageLocationRepository: StorageLocationRepository,
+    private val documentTypeRepository: DocumentTypeRepository,
+    private val authRepository: AuthRepository,
     private val bulkInsertArchivesUseCase: BulkInsertArchivesUseCase,
     private val getArchiveDetailUseCase: com.example.arsipbpkpad.domain.usecase.GetArchiveDetailUseCase,
     private val savedStateHandle: SavedStateHandle
@@ -161,6 +169,8 @@ class RapidInputViewModel @Inject constructor(
         observeClassificationCodes()
         syncClassificationCodes()
         loadRooms()
+        loadDocumentTypes()
+        observeDocumentTypes()
         
         val boxSessionId: String? = savedStateHandle["sessionId"]
         val archiveId: String? = savedStateHandle["archiveId"]
@@ -207,7 +217,7 @@ class RapidInputViewModel @Inject constructor(
                 val bundles = docs.filter { it.bundleId != null }
                     .groupBy { it.bundleId }
                     .map { (bundleId, bundleDocs) ->
-                        val sp2d = bundleDocs.find { it.type == DocType.SP2D }
+                        val sp2d = bundleDocs.find { normalizeDocumentType(it.type) == DocumentTypeDefaults.SP2D }
                         StagedBundle(
                             id = bundleId!!,
                             name = sp2d?.documentNumber ?: bundleDocs.first().documentNumber ?: "Bundle",
@@ -325,7 +335,21 @@ class RapidInputViewModel @Inject constructor(
         }
     }
 
-    private fun handleDocTypeChange(value: DocType) {
+    private fun loadDocumentTypes() {
+        viewModelScope.launch {
+            documentTypeRepository.getActiveDocumentTypes()
+        }
+    }
+
+    private fun observeDocumentTypes() {
+        viewModelScope.launch {
+            documentTypeRepository.observeDocumentTypes().collect { types ->
+                _uiState.update { it.copy(availableDocTypes = types) }
+            }
+        }
+    }
+
+    private fun handleDocTypeChange(value: String) {
         _uiState.update { it.copy(
             docType = value,
             isAutoBundleEnabled = false,
@@ -358,9 +382,10 @@ class RapidInputViewModel @Inject constructor(
         }
 
         val nominalValue = state.nominal.toDoubleOrNull() ?: 0.0
-        val isNominalRequired = when (state.docType) {
-            DocType.SP2D, DocType.SPM -> true
-            DocType.SPJ -> state.selectedBundleId == null
+        val normalizedType = normalizeDocumentType(state.docType)
+        val isNominalRequired = when (normalizedType) {
+            DocumentTypeDefaults.SP2D, DocumentTypeDefaults.SPM -> true
+            DocumentTypeDefaults.SPJ -> state.selectedBundleId == null
             else -> false
         }
 
@@ -429,7 +454,7 @@ class RapidInputViewModel @Inject constructor(
                 documentNumber = metadata.docNumber ?: state.documentNumber,
                 subject = metadata.subject ?: state.subject,
                 docType = if (metadata.docType != null) {
-                    try { DocType.valueOf(metadata.docType) } catch (e: Exception) { state.docType }
+                    normalizeDocumentType(metadata.docType)
                 } else state.docType,
                 nominal = metadata.nominal?.toLong()?.toString() ?: state.nominal,
                 boxContext = if (state.boxContext.year.isBlank() && metadata.year != null) {
@@ -529,6 +554,12 @@ class RapidInputViewModel @Inject constructor(
                 return@launch
             }
 
+            // Ensure document type exists (only for roles that can mutate)
+            val role = authRepository.currentUserRole.value
+            if (role == UserRole.ARSIPARIS || role == UserRole.SUPER_ADMIN) {
+                documentTypeRepository.ensureDocumentTypeExists(state.docType)
+            }
+
             // Check for potential duplicate if not forced
             if (!forceSave && state.copyType == DocCopyType.ORIGINAL) {
                 val exists = archiveRepository.checkDocumentNumberAndTypeExists(
@@ -541,18 +572,19 @@ class RapidInputViewModel @Inject constructor(
                 }
             }
 
-            val bundleId = if (state.isAutoBundleEnabled || state.docType == DocType.SPJ) {
+            val normalizedType = normalizeDocumentType(state.docType)
+            val bundleId = if (state.isAutoBundleEnabled || normalizedType == DocumentTypeDefaults.SPJ) {
                 state.selectedBundleId ?: UUID.randomUUID().toString()
             } else null
             val documents = mutableListOf<ArchiveDocument>()
             
             documents.add(createBaseDocument(state, sessionId, bundleId))
             
-            if (state.isAutoBundleEnabled && (state.docType == DocType.SP2D || state.docType == DocType.SPM)) {
-                if (state.docType == DocType.SP2D) {
+            if (state.isAutoBundleEnabled && (normalizedType == DocumentTypeDefaults.SP2D || normalizedType == DocumentTypeDefaults.SPM)) {
+                if (normalizedType == DocumentTypeDefaults.SP2D) {
                     documents.add(createBaseDocument(state, sessionId, bundleId).copy(
                         id = UUID.randomUUID().toString(),
-                        type = DocType.SPM,
+                        type = DocumentTypeDefaults.SPM,
                         documentNumber = state.spmDocumentNumber
                     ))
                 }
@@ -560,7 +592,7 @@ class RapidInputViewModel @Inject constructor(
                 if (state.spjDescription.isNotBlank()) {
                     documents.add(createBaseDocument(state, sessionId, bundleId).copy(
                         id = UUID.randomUUID().toString(),
-                        type = DocType.SPJ,
+                        type = DocumentTypeDefaults.SPJ,
                         documentNumber = "SPJ-" + state.documentNumber,
                         description = state.spjDescription
                     ))

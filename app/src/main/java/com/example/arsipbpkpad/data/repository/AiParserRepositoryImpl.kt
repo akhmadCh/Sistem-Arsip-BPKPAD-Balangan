@@ -15,9 +15,9 @@ import io.ktor.client.call.body
 import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
+import io.ktor.client.statement.HttpResponse
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
-import io.ktor.client.statement.HttpResponse
 import io.ktor.http.isSuccess
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.serialization.json.Json
@@ -58,9 +58,9 @@ class AiParserRepositoryImpl @Inject constructor(
                   "isArchiveDocument": boolean
                 }
                 
-                Set "isArchiveDocument" to true only if the text belongs to an SPP, SPM, SP2D, or SPJ document from BPKPAD Balangan.
-                If the text is just random words, or other type of document, set "isArchiveDocument" to false.
-                Ensure "docType" is one of: SPP, SPM, SP2D, SPJ.
+                Set "isArchiveDocument" to true only if the text belongs to a government document from BPKPAD Balangan.
+                If the text is just random words, or other unrelated type of document, set "isArchiveDocument" to false.
+                Common docTypes are: SPP, SPM, SP2D, SPJ. But you can return other document types if found.
                 Only return the JSON object.
             """.trimIndent()
 

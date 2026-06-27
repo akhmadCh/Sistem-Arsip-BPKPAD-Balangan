@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import com.example.arsipbpkpad.domain.model.DomainResult
 import com.example.arsipbpkpad.domain.repository.ArchiveRepository
 import com.example.arsipbpkpad.domain.usecase.DeleteArchiveUseCase
+import com.example.arsipbpkpad.domain.usecase.GetActivityLogsForEntityUseCase
 import com.example.arsipbpkpad.domain.usecase.GetArchiveDetailUseCase
 import io.mockk.coEvery
 import io.mockk.mockk
@@ -24,6 +25,7 @@ class ArchiveDetailViewModelTest {
 
     private val getArchiveDetailUseCase = mockk<GetArchiveDetailUseCase>(relaxed = true)
     private val deleteArchiveUseCase = mockk<DeleteArchiveUseCase>()
+    private val getActivityLogsForEntityUseCase = mockk<GetActivityLogsForEntityUseCase>(relaxed = true)
     private val archiveRepository = mockk<ArchiveRepository>(relaxed = true)
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var viewModel: ArchiveDetailViewModel
@@ -35,6 +37,7 @@ class ArchiveDetailViewModelTest {
         viewModel = ArchiveDetailViewModel(
             getArchiveDetailUseCase,
             deleteArchiveUseCase,
+            getActivityLogsForEntityUseCase,
             archiveRepository,
             savedStateHandle
         )

@@ -157,7 +157,7 @@ fun LoginScreen(
                             Text(
                                 text = "Sistem Pengarsipan BPKPAD Balangan",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = Color.Gray,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontSize = 14.sp
                             )
                         }
@@ -184,7 +184,7 @@ fun LoginScreen(
                     Text(
                         text = "Sistem Pengarsipan BPKPAD Balangan",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color.Gray,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 14.sp
                     )
                 }
@@ -196,7 +196,7 @@ fun LoginScreen(
                     Text(
                         text = "Username",
                         style = MaterialTheme.typography.labelLarge,
-                        color = Color.Gray,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
                     OutlinedTextField(
@@ -213,7 +213,9 @@ fun LoginScreen(
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedContainerColor = MaterialTheme.colorScheme.surface,
                             unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                            focusedBorderColor = MaterialTheme.colorScheme.primary
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                            unfocusedTextColor = MaterialTheme.colorScheme.onSurface
                         ),
                         placeholder = { Text("Email Anda") },
                         isError = uiState.errorMessage != null
@@ -227,7 +229,7 @@ fun LoginScreen(
                     Text(
                         text = "Password",
                         style = MaterialTheme.typography.labelLarge,
-                        color = Color.Gray,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
                     OutlinedTextField(
@@ -250,14 +252,16 @@ fun LoginScreen(
                                 Icon(
                                     imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
                                     contentDescription = if (passwordVisible) "Hide password" else "Show password",
-                                    tint = Color.LightGray
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                         },
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedContainerColor = MaterialTheme.colorScheme.surface,
                             unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                            focusedBorderColor = MaterialTheme.colorScheme.primary
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                            unfocusedTextColor = MaterialTheme.colorScheme.onSurface
                         ),
                         placeholder = { Text("Password Anda") },
                         isError = uiState.errorMessage != null
@@ -280,7 +284,7 @@ fun LoginScreen(
                         Text(
                             text = "Remember me",
                             style = MaterialTheme.typography.bodySmall,
-                            color = Color.Gray
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }

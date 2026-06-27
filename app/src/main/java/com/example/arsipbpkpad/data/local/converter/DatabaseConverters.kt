@@ -5,17 +5,10 @@ import com.example.arsipbpkpad.domain.model.ArchiveMetadata
 import com.example.arsipbpkpad.domain.model.DocCondition
 import com.example.arsipbpkpad.domain.model.DocCopyType
 import com.example.arsipbpkpad.domain.model.DocStatus
-import com.example.arsipbpkpad.domain.model.DocType
 import kotlinx.serialization.json.Json
 
 class DatabaseConverters {
     private val json = Json { ignoreUnknownKeys = true }
-
-    @TypeConverter
-    fun fromDocType(value: DocType): String = value.name
-
-    @TypeConverter
-    fun toDocType(value: String): DocType = DocType.valueOf(value)
 
     @TypeConverter
     fun fromDocStatus(value: DocStatus): String = value.name

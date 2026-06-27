@@ -68,7 +68,7 @@ object DatabaseModule {
         return listOf(
             ArchiveEntity(
                 id = "1",
-                type = DocType.SP2D,
+                type = "SP2D",
                 copyType = DocCopyType.ORIGINAL,
                 copyCount = 1,
                 documentNumber = "SP2D-123",
@@ -86,7 +86,7 @@ object DatabaseModule {
             ),
             ArchiveEntity(
                 id = "2",
-                type = DocType.SPM,
+                type = "SPM",
                 copyType = DocCopyType.ORIGINAL,
                 copyCount = 1,
                 documentNumber = "SPM-456",

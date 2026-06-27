@@ -275,7 +275,7 @@ fun ArchiveDetailHeader(archive: ArchiveDocument) {
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     Text(
-                        text = archive.type.name,
+                        text = archive.type,
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.ExtraBold,
@@ -444,7 +444,7 @@ fun RelatedArchiveItem(related: ArchiveDocument, onClick: () -> Unit) {
                 )
             },
             supportingContent = {
-                Text(text = related.type.name)
+                Text(text = related.type)
             },
             leadingContent = {
                 Box(
@@ -569,7 +569,7 @@ fun DetailCardContainer(
 @Composable
 fun LocationBlock(modifier: Modifier = Modifier, label: String, value: String, isHighlighted: Boolean = false) {
     val bgColor = if (isHighlighted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer
-    val textColor = if (isHighlighted) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary
+    val textColor = if (isHighlighted) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSecondaryContainer
     val labelColor = if (isHighlighted) MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurfaceVariant
 
     Column(
@@ -660,7 +660,7 @@ fun ActivityLogTimelineItem(log: com.example.arsipbpkpad.domain.model.ActivityLo
 fun ArchiveDetailPreview() {
     val mockArchive = com.example.arsipbpkpad.domain.model.ArchiveDocument(
         id = "1",
-        type = com.example.arsipbpkpad.domain.model.DocType.SP2D,
+        type = "SP2D",
         documentNumber = "001/SP2D/2026",
         copyType = com.example.arsipbpkpad.domain.model.DocCopyType.ORIGINAL,
         copyCount = 1,

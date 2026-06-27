@@ -1,5 +1,0 @@
-package com.example.arsipbpkpad.domain.model
-
-enum class DocType {
-    SPP, SPM, SP2D, SPJ
-}

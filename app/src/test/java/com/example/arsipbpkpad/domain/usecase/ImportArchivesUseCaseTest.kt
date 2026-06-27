@@ -5,9 +5,9 @@ import com.example.arsipbpkpad.domain.model.ArchiveMetadata
 import com.example.arsipbpkpad.domain.model.DocCondition
 import com.example.arsipbpkpad.domain.model.DocCopyType
 import com.example.arsipbpkpad.domain.model.DocStatus
-import com.example.arsipbpkpad.domain.model.DocType
 import com.example.arsipbpkpad.domain.model.DomainResult
 import com.example.arsipbpkpad.domain.repository.ArchiveRepository
+import com.example.arsipbpkpad.domain.repository.DocumentTypeRepository
 import com.example.arsipbpkpad.domain.repository.StorageLocationRepository
 import com.example.arsipbpkpad.domain.service.ExcelService
 import io.mockk.coEvery
@@ -24,6 +24,7 @@ class ImportArchivesUseCaseTest {
     private val archiveRepository = mockk<ArchiveRepository>(relaxed = true)
     private val excelService = mockk<ExcelService>()
     private val storageLocationRepository = mockk<StorageLocationRepository>()
+    private val documentTypeRepository = mockk<DocumentTypeRepository>(relaxed = true)
     private val inputStream = mockk<InputStream>()
 
     private lateinit var importArchivesUseCase: ImportArchivesUseCase
@@ -33,7 +34,8 @@ class ImportArchivesUseCaseTest {
         importArchivesUseCase = ImportArchivesUseCase(
             archiveRepository,
             excelService,
-            storageLocationRepository
+            storageLocationRepository,
+            documentTypeRepository
         )
     }
 
@@ -80,7 +82,7 @@ class ImportArchivesUseCaseTest {
     ): ArchiveDocument {
         return ArchiveDocument(
             id = id,
-            type = DocType.SP2D,
+            type = "SP2D",
             copyType = DocCopyType.ORIGINAL,
             copyCount = 1,
             documentNumber = docNumber,

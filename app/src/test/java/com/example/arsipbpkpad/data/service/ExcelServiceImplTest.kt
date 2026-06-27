@@ -5,7 +5,7 @@ import com.example.arsipbpkpad.domain.model.ArchiveMetadata
 import com.example.arsipbpkpad.domain.model.DocCondition
 import com.example.arsipbpkpad.domain.model.DocCopyType
 import com.example.arsipbpkpad.domain.model.DocStatus
-import com.example.arsipbpkpad.domain.model.DocType
+import com.example.arsipbpkpad.domain.model.DocumentTypeDefaults
 import com.example.arsipbpkpad.domain.model.DomainConstants
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
@@ -120,7 +120,7 @@ class ExcelServiceImplTest {
     private fun createArchive(id: String, docNumber: String): ArchiveDocument {
         return ArchiveDocument(
             id = id,
-            type = DocType.SP2D,
+            type = "SP2D",
             copyType = DocCopyType.ORIGINAL,
             copyCount = 1,
             documentNumber = docNumber,

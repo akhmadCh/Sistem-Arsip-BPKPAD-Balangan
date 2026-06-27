@@ -9,7 +9,7 @@ import com.example.arsipbpkpad.data.local.entity.ArchiveEntity
 import com.example.arsipbpkpad.domain.model.DocCondition
 import com.example.arsipbpkpad.domain.model.DocCopyType
 import com.example.arsipbpkpad.domain.model.DocStatus
-import com.example.arsipbpkpad.domain.model.DocType
+import com.example.arsipbpkpad.domain.model.DocumentTypeDefaults
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -91,7 +91,7 @@ class ArchiveDaoSearchTest {
     private fun createArchive(id: String, docNumber: String, year: Int = 2026, description: String = "Test"): ArchiveEntity {
         return ArchiveEntity(
             id = id,
-            type = DocType.SP2D,
+            type = "SP2D",
             copyType = DocCopyType.ORIGINAL,
             copyCount = 1,
             documentNumber = docNumber,

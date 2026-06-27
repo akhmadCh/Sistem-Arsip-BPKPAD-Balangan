@@ -7,7 +7,7 @@ package com.example.arsipbpkpad.domain.model
 data class ArchiveDocument(
     val id: String,
     val boxSessionId: String? = null,
-    val type: DocType,
+    val type: String,
     val documentNumber: String?,
     val copyType: DocCopyType,
     val copyCount: Int = DomainConstants.DEFAULT_COPY_COUNT,

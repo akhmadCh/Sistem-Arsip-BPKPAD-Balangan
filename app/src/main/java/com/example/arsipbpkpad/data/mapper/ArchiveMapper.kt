@@ -8,13 +8,13 @@ import com.example.arsipbpkpad.domain.model.ArchiveMetadata
 import com.example.arsipbpkpad.domain.model.DocCondition
 import com.example.arsipbpkpad.domain.model.DocCopyType
 import com.example.arsipbpkpad.domain.model.DocStatus
-import com.example.arsipbpkpad.domain.model.DocType
+import com.example.arsipbpkpad.domain.model.DocumentTypeDefaults.normalizeDocumentType
 import java.util.UUID
 
 fun ArchiveDto.toDomain(): ArchiveDocument {
     return ArchiveDocument(
         id = id ?: "",
-        type = try { DocType.valueOf(type) } catch (e: Exception) { DocType.SP2D },
+        type = type.trim().ifBlank { "SP2D" },
         documentNumber = documentNumber,
         copyType = try { DocCopyType.valueOf(copyType) } catch (e: Exception) { DocCopyType.ORIGINAL },
         copyCount = copyCount,
@@ -61,7 +61,7 @@ fun ArchiveDocument.toEntity(syncStatus: String = "SYNCED"): ArchiveEntity {
     return ArchiveEntity(
         id = id,
         boxSessionId = boxSessionId,
-        type = type,
+        type = normalizeDocumentType(type),
         copyType = copyType,
         copyCount = copyCount,
         documentNumber = documentNumber,
@@ -85,7 +85,7 @@ fun ArchiveDocument.toEntity(syncStatus: String = "SYNCED"): ArchiveEntity {
 fun ArchiveDocument.toDto(): ArchiveDto {
     return ArchiveDto(
         id = if (id.length < 30) null else id, // Only send if it looks like a real UUID, not a local draft ID
-        type = type.name,
+        type = normalizeDocumentType(type),
         documentNumber = documentNumber,
         copyType = copyType.name,
         copyCount = copyCount,

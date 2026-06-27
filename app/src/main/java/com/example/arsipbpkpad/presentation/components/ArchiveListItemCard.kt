@@ -24,7 +24,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.arsipbpkpad.domain.model.ArchiveDocument
-import com.example.arsipbpkpad.ui.theme.PrimaryGreen
 
 @Composable
 fun ArchiveTableHeader(
@@ -40,7 +39,7 @@ fun ArchiveTableHeader(
                   (if (showStatus) 120.dp else 0.dp)
 
     Surface(
-        color = PrimaryGreen,
+        color = MaterialTheme.colorScheme.primary,
         modifier = modifier.fillMaxWidth().widthIn(min = minWidth)
     ) {
         Row(
@@ -48,9 +47,9 @@ fun ArchiveTableHeader(
             verticalAlignment = Alignment.CenterVertically
         ) {
             HeaderCell(text = "No", modifier = Modifier.width(48.dp))
-            VerticalDivider(color = Color.White.copy(alpha = 0.3f))
+            VerticalDivider(color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.3f))
             HeaderCell(text = "Kode", modifier = Modifier.width(100.dp))
-            VerticalDivider(color = Color.White.copy(alpha = 0.3f))
+            VerticalDivider(color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.3f))
             
             // "No Dokumen" takes the remaining space (weight 1f) but has a minimum width
             HeaderCell(
@@ -59,17 +58,17 @@ fun ArchiveTableHeader(
             )
             
             if (showYear) {
-                VerticalDivider(color = Color.White.copy(alpha = 0.3f))
+                VerticalDivider(color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.3f))
                 HeaderCell(text = "Thn", modifier = Modifier.width(64.dp))
             }
             
             if (showCondition) {
-                VerticalDivider(color = Color.White.copy(alpha = 0.3f))
+                VerticalDivider(color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.3f))
                 HeaderCell(text = "Kondisi", modifier = Modifier.width(100.dp))
             }
             
             if (showStatus) {
-                VerticalDivider(color = Color.White.copy(alpha = 0.3f))
+                VerticalDivider(color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.3f))
                 HeaderCell(text = "Status", modifier = Modifier.width(120.dp))
             }
         }
@@ -83,7 +82,7 @@ fun HeaderCell(text: String, modifier: Modifier = Modifier) {
         modifier = modifier.padding(horizontal = 4.dp),
         style = MaterialTheme.typography.labelMedium,
         fontWeight = FontWeight.ExtraBold,
-        color = Color.White,
+        color = MaterialTheme.colorScheme.onPrimary,
         textAlign = TextAlign.Center
     )
 }
@@ -122,7 +121,12 @@ fun ArchiveListItemCard(
             VerticalDivider()
 
             // 2. Kode
-            TableCell(text = archive.classificationCode, modifier = Modifier.width(100.dp), isBold = true, color = PrimaryGreen)
+            TableCell(
+                text = archive.classificationCode, 
+                modifier = Modifier.width(100.dp), 
+                isBold = true, 
+                color = MaterialTheme.colorScheme.primary
+            )
             VerticalDivider()
 
             // 3. No Dokumen

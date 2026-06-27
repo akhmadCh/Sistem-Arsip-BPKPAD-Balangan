@@ -2,6 +2,8 @@ package com.example.arsipbpkpad.presentation.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.arsipbpkpad.domain.model.DocumentTypeDefaults
+import com.example.arsipbpkpad.domain.model.DocumentTypeDefaults.normalizeDocumentType
 import com.example.arsipbpkpad.domain.model.DomainResult
 import com.example.arsipbpkpad.domain.repository.StagingRepository
 import com.example.arsipbpkpad.domain.usecase.GetArchivedYearsUseCase
@@ -79,10 +81,10 @@ class HomeViewModel @Inject constructor(
                                 isLoading = false,
                                 totalDocuments = archives.size.toString(),
                                 expiredDocuments = archives.count { (currentYear - it.year) > 10 }.toString(),
-                                sppCount = archives.count { it.type == com.example.arsipbpkpad.domain.model.DocType.SPP }.toString(),
-                                spmCount = archives.count { it.type == com.example.arsipbpkpad.domain.model.DocType.SPM }.toString(),
-                                sp2dCount = archives.count { it.type == com.example.arsipbpkpad.domain.model.DocType.SP2D }.toString(),
-                                spjCount = archives.count { it.type == com.example.arsipbpkpad.domain.model.DocType.SPJ }.toString(),
+                                sppCount = archives.count { normalizeDocumentType(it.type) == DocumentTypeDefaults.SPP }.toString(),
+                                spmCount = archives.count { normalizeDocumentType(it.type) == DocumentTypeDefaults.SPM }.toString(),
+                                sp2dCount = archives.count { normalizeDocumentType(it.type) == DocumentTypeDefaults.SP2D }.toString(),
+                                spjCount = archives.count { normalizeDocumentType(it.type) == DocumentTypeDefaults.SPJ }.toString(),
                                 recentItems = archives.take(5)
                             )
                         }

@@ -5,7 +5,8 @@ import com.example.arsipbpkpad.domain.model.ArchiveMetadata
 import com.example.arsipbpkpad.domain.model.DocCondition
 import com.example.arsipbpkpad.domain.model.DocCopyType
 import com.example.arsipbpkpad.domain.model.DocStatus
-import com.example.arsipbpkpad.domain.model.DocType
+import com.example.arsipbpkpad.domain.model.DocumentTypeDefaults
+import com.example.arsipbpkpad.domain.model.DocumentTypeDefaults.normalizeDocumentType
 import com.example.arsipbpkpad.domain.model.DomainConstants
 import com.example.arsipbpkpad.domain.service.ExcelService
 import kotlinx.coroutines.CoroutineDispatcher
@@ -165,14 +166,14 @@ class ExcelServiceImpl @Inject constructor(
         }
     }
 
-    private fun inferDocType(docNumber: String?): DocType {
-        if (docNumber == null) return DocType.SP2D
+    private fun inferDocType(docNumber: String?): String {
+        if (docNumber == null) return DocumentTypeDefaults.SP2D
         return when {
-            docNumber.contains("SP2D", ignoreCase = true) -> DocType.SP2D
-            docNumber.contains("SPM", ignoreCase = true) -> DocType.SPM
-            docNumber.contains("SPP", ignoreCase = true) -> DocType.SPP
-            docNumber.contains("SPJ", ignoreCase = true) -> DocType.SPJ
-            else -> DocType.SP2D
+            docNumber.contains("SP2D", ignoreCase = true) -> DocumentTypeDefaults.SP2D
+            docNumber.contains("SPM", ignoreCase = true) -> DocumentTypeDefaults.SPM
+            docNumber.contains("SPP", ignoreCase = true) -> DocumentTypeDefaults.SPP
+            docNumber.contains("SPJ", ignoreCase = true) -> DocumentTypeDefaults.SPJ
+            else -> DocumentTypeDefaults.SP2D
         }
     }
 }

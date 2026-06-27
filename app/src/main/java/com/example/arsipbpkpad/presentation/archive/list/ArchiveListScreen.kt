@@ -580,17 +580,25 @@ fun ArchiveSearchBar(query: String, onQueryChange: (String) -> Unit) {
         placeholder = {
             Text(
                 text = stringResource(R.string.search_hint),
-                color = MaterialTheme.colorScheme.outline,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                 style = MaterialTheme.typography.bodyMedium
             )
         },
         leadingIcon = {
-            Icon(imageVector = Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.outline)
+            Icon(
+                imageVector = Icons.Default.Search, 
+                contentDescription = null, 
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         },
         trailingIcon = {
             if (query.isNotEmpty()) {
                 IconButton(onClick = { onQueryChange("") }) {
-                    Icon(imageVector = Icons.Default.Close, contentDescription = null, tint = MaterialTheme.colorScheme.outline)
+                    Icon(
+                        imageVector = Icons.Default.Close, 
+                        contentDescription = null, 
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
         },
@@ -599,7 +607,9 @@ fun ArchiveSearchBar(query: String, onQueryChange: (String) -> Unit) {
             focusedContainerColor = MaterialTheme.colorScheme.surface,
             unfocusedContainerColor = MaterialTheme.colorScheme.surface,
             unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
-            focusedBorderColor = MaterialTheme.colorScheme.primary
+            focusedBorderColor = MaterialTheme.colorScheme.primary,
+            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+            unfocusedTextColor = MaterialTheme.colorScheme.onSurface
         ),
         singleLine = true
     )
@@ -727,7 +737,7 @@ fun ArchiveListScreenPreview() {
             archives = listOf(
                 ArchiveDocument(
                     id = "1",
-                    type = com.example.arsipbpkpad.domain.model.DocType.SP2D,
+                    type = "SP2D",
                     documentNumber = "SP2D-1029",
                     classificationCode = "900.1.3.1",
                     copyType = com.example.arsipbpkpad.domain.model.DocCopyType.ORIGINAL,

@@ -1,6 +1,7 @@
 package com.example.arsipbpkpad.domain.usecase
 
-import com.example.arsipbpkpad.domain.model.DocType
+import com.example.arsipbpkpad.domain.model.DocumentTypeDefaults
+import com.example.arsipbpkpad.domain.model.DocumentTypeDefaults.normalizeDocumentType
 import com.example.arsipbpkpad.domain.model.DomainConstants
 import com.example.arsipbpkpad.domain.model.DomainResult
 import com.example.arsipbpkpad.domain.repository.ArchiveRepository
@@ -47,7 +48,7 @@ class BulkInsertArchivesUseCase @Inject constructor(
                 .groupBy { it.bundleId!! }
             
             for ((localId, docs) in bundlesToCreate) {
-                val sp2d = docs.find { it.type == DocType.SP2D }
+                val sp2d = docs.find { normalizeDocumentType(it.type) == DocumentTypeDefaults.SP2D }
                 val bundleName = sp2d?.documentNumber ?: docs.first().documentNumber ?: "Bundle"
                 val bundleDesc = "Bundle otomatis untuk transaksi $bundleName"
                 

@@ -16,6 +16,8 @@ import com.example.arsipbpkpad.data.repository.ActivityLogRepositoryImpl
 import com.example.arsipbpkpad.domain.repository.ActivityLogRepository
 import com.example.arsipbpkpad.data.repository.AuthRepositoryImpl
 import com.example.arsipbpkpad.domain.repository.AuthRepository
+import com.example.arsipbpkpad.data.repository.DocumentTypeRepositoryImpl
+import com.example.arsipbpkpad.domain.repository.DocumentTypeRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -72,4 +74,10 @@ abstract class RepositoryModule {
     abstract fun bindActivityLogRepository(
         activityLogRepositoryImpl: ActivityLogRepositoryImpl
     ): ActivityLogRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindDocumentTypeRepository(
+        documentTypeRepositoryImpl: DocumentTypeRepositoryImpl
+    ): DocumentTypeRepository
 }

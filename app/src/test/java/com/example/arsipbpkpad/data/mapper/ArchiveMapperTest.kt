@@ -5,7 +5,7 @@ import com.example.arsipbpkpad.domain.model.ArchiveMetadata
 import com.example.arsipbpkpad.domain.model.DocCondition
 import com.example.arsipbpkpad.domain.model.DocCopyType
 import com.example.arsipbpkpad.domain.model.DocStatus
-import com.example.arsipbpkpad.domain.model.DocType
+import com.example.arsipbpkpad.domain.model.DocumentTypeDefaults
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -18,7 +18,7 @@ class ArchiveMapperTest {
         val storageId = UUID.randomUUID().toString()
         val domain = ArchiveDocument(
             id = "1",
-            type = DocType.SP2D,
+            type = "SP2D",
             documentNumber = "DOC-001",
             classificationCode = "900.1.3.1",
             copyType = DocCopyType.ORIGINAL,
@@ -53,7 +53,7 @@ class ArchiveMapperTest {
     fun `MAP_002 - toDto validates UUID for storage location`() {
         val domain = ArchiveDocument(
             id = UUID.randomUUID().toString(),
-            type = DocType.SP2D,
+            type = "SP2D",
             documentNumber = "DOC-001",
             classificationCode = "900.1.3.1",
             copyType = DocCopyType.ORIGINAL,

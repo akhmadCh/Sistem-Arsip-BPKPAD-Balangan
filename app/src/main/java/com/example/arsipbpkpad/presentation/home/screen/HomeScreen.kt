@@ -229,14 +229,14 @@ fun HomePrimaryStats(uiState: HomeUiState) {
         PrimaryStatCard(
             title = stringResource(R.string.total_documents),
             count = uiState.totalDocuments,
-            containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f),
-            contentColor = MaterialTheme.colorScheme.primary
+            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
         )
         PrimaryStatCard(
             title = stringResource(R.string.expired_documents),
             count = uiState.expiredDocuments,
-            containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.08f),
-            contentColor = MaterialTheme.colorScheme.error
+            containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.4f),
+            contentColor = MaterialTheme.colorScheme.onErrorContainer
         )
     }
 }

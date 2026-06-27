@@ -61,7 +61,7 @@ class ArchiveListViewModel @Inject constructor(
                     if (params.filter == "Semua") {
                         documents
                     } else {
-                        documents.filter { it.type.name.equals(params.filter, ignoreCase = true) }
+                        documents.filter { it.type.equals(params.filter, ignoreCase = true) }
                     }
                 }
         }

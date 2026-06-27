@@ -145,6 +145,7 @@
     <string name="placeholder_spj_desc">Contoh: Laporan Pertanggungjawaban ATK</string>
     <string name="hint_enter_value">Masukkan %1$s...</string>
     <string name="hint_select_value">Pilih %1$s...</string>
+    <string name="hint_type_or_select_value">Ketik atau pilih %1$s...</string>
     <string name="label_staging_list">Daftar Penyimpanan Sementara (%1$d)</string>
     <string name="msg_empty_staging">BOX Sementara masih kosong.\nSilakan masukkan dokumen di atas.</string>
     <string name="label_select_bundle_optional">Pilih Bundle (Opsional)</string>

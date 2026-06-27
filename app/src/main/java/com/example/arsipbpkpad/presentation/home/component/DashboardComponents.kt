@@ -65,7 +65,8 @@ fun PrimaryStatCard(
     title: String,
     count: String,
     containerColor: Color,
-    contentColor: Color
+    contentColor: Color,
+    isThemeAware: Boolean = false
 ) {
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
@@ -75,8 +76,11 @@ fun PrimaryStatCard(
     val verticalPadding = if (isLandscape) 12.dp else 20.dp
     val spacerHeight = if (isLandscape) 4.dp else 12.dp
 
+    val finalContainerColor = if (isThemeAware) containerColor else containerColor
+    val finalContentColor = if (isThemeAware) contentColor else contentColor
+
     Card(
-        colors = CardDefaults.cardColors(containerColor = containerColor),
+        colors = CardDefaults.cardColors(containerColor = finalContainerColor),
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         modifier = Modifier.fillMaxWidth()
@@ -84,14 +88,14 @@ fun PrimaryStatCard(
         Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = verticalPadding)) {
             Text(
                 text = title,
-                color = contentColor,
+                color = finalContentColor,
                 style = titleStyle,
                 fontWeight = FontWeight.SemiBold
             )
             Spacer(modifier = Modifier.height(spacerHeight))
             Text(
                 text = count,
-                color = contentColor,
+                color = finalContentColor,
                 style = countStyle,
                 fontWeight = FontWeight.Bold
             )

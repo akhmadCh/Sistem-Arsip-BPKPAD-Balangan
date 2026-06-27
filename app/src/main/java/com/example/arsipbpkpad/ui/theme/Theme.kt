@@ -1,6 +1,5 @@
 package com.example.arsipbpkpad.ui.theme
 
-import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
@@ -21,12 +20,16 @@ private val DarkColorScheme = darkColorScheme(
     onSecondary = PrimaryGreen,
     secondaryContainer = Color(0xFF2E7D32),
     onSecondaryContainer = White,
+    tertiary = Color(0xFFFF9800), // Warning Amber
+    onTertiary = Color.Black,
     background = Color(0xFF121212),
     surface = Color(0xFF121212),
     onBackground = White,
     onSurface = White,
     surfaceVariant = Color(0xFF2C2C2C), // Proper dark variant
-    onSurfaceVariant = Color(0xFFBDBDBD)
+    onSurfaceVariant = Color(0xFFBDBDBD),
+    error = ErrorRed,
+    onError = White
 )
 
 private val LightColorScheme = lightColorScheme(
@@ -47,7 +50,9 @@ private val LightColorScheme = lightColorScheme(
     onBackground = Color(0xFF1C1B1F),
     onSurface = Color(0xFF1C1B1F),
     surfaceVariant = SurfaceVariant,
-    error = ErrorRed
+    onSurfaceVariant = TextSecondary,
+    error = ErrorRed,
+    onError = White
 )
 
 @Composable

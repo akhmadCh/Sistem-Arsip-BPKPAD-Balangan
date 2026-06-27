@@ -9,7 +9,7 @@ import com.example.arsipbpkpad.data.local.entity.ArchiveEntity
 import com.example.arsipbpkpad.domain.model.DocCondition
 import com.example.arsipbpkpad.domain.model.DocCopyType
 import com.example.arsipbpkpad.domain.model.DocStatus
-import com.example.arsipbpkpad.domain.model.DocType
+import com.example.arsipbpkpad.domain.model.DocumentTypeDefaults
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -41,7 +41,7 @@ class ArchiveDaoTest {
     fun writeArchiveAndReadInList() = runBlocking {
         val archive = ArchiveEntity(
             id = "1",
-            type = DocType.SP2D,
+            type = "SP2D",
             copyType = DocCopyType.ORIGINAL,
             copyCount = 1,
             documentNumber = "DOC-001",
