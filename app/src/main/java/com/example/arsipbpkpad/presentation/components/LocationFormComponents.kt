@@ -48,6 +48,7 @@ fun HierarchicalLocationSelector(
         LocationDropdown(
             label = "Gudang",
             value = typedRoom,
+            placeholder = "Pilih atau ketik nama gudang",
             options = (roomsList as? ResultState.Success)?.data ?: emptyList(),
             onValueChange = onRoomChange,
             onOptionSelected = { onRoomSelected(it) },
@@ -59,12 +60,14 @@ fun HierarchicalLocationSelector(
         LocationDropdown(
             label = "Rak",
             value = typedShelf,
+            placeholder = "Pilih atau ketik nomor rak",
             options = (shelvesList as? ResultState.Success)?.data ?: emptyList(),
             onValueChange = onShelfChange,
             onOptionSelected = { onShelfSelected(it) },
             onCreateNew = { onCreateShelf(it) },
             getItemName = { it.name },
-            enabled = selectedRoom != null
+            enabled = selectedRoom != null,
+            helperText = if (selectedRoom == null) "Pilih gudang terlebih dahulu" else null
         )
 
         FormTextField(
@@ -83,12 +86,14 @@ fun HierarchicalLocationSelector(
 fun <T> LocationDropdown(
     label: String,
     value: String,
+    placeholder: String = "",
     options: List<T>,
     onValueChange: (String) -> Unit,
     onOptionSelected: (T) -> Unit,
     onCreateNew: (String) -> Unit,
     getItemName: (T) -> String,
-    enabled: Boolean
+    enabled: Boolean,
+    helperText: String? = null
 ) {
     var expanded by remember { mutableStateOf(false) }
 
@@ -109,6 +114,13 @@ fun <T> LocationDropdown(
                     onValueChange(it)
                     expanded = true
                 },
+                placeholder = {
+                    Text(
+                        text = placeholder,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    )
+                },
                 modifier = Modifier
                     .menuAnchor(MenuAnchorType.PrimaryEditable)
                     .fillMaxWidth(),
@@ -118,7 +130,12 @@ fun <T> LocationDropdown(
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedContainerColor = MaterialTheme.colorScheme.surface,
                     unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                    disabledContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.12f)
+                    disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.38f),
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                    focusedLabelColor = MaterialTheme.colorScheme.primary,
+                    unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    disabledTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
             )
 
@@ -132,7 +149,7 @@ fun <T> LocationDropdown(
             ) {
                 filteredOptions.forEach { option ->
                     DropdownMenuItem(
-                        text = { Text(getItemName(option)) },
+                        text = { Text(getItemName(option), style = MaterialTheme.typography.bodyLarge) },
                         onClick = {
                             onOptionSelected(option)
                             expanded = false
@@ -149,6 +166,14 @@ fun <T> LocationDropdown(
                     )
                 }
             }
+        }
+        if (helperText != null) {
+            Text(
+                text = helperText,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
+                modifier = Modifier.padding(start = 4.dp, top = 4.dp)
+            )
         }
     }
 }

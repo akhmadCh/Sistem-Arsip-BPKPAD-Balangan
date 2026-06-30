@@ -47,6 +47,7 @@ import com.example.arsipbpkpad.domain.model.canViewAnalytics
 import com.example.arsipbpkpad.presentation.components.BottomNavItem
 import com.example.arsipbpkpad.presentation.components.BpkpadBottomNavigation
 import com.example.arsipbpkpad.presentation.components.BpkpadTopAppBar
+import com.example.arsipbpkpad.presentation.components.BpkpadBrandTopAppBar
 import com.example.arsipbpkpad.presentation.home.HomeUiState
 import com.example.arsipbpkpad.presentation.home.HomeViewModel
 import com.example.arsipbpkpad.presentation.home.component.HeaderSection
@@ -100,7 +101,7 @@ fun HomeContent(
 ) {
     Scaffold(
         topBar = { 
-            BpkpadTopAppBar(
+            BpkpadBrandTopAppBar(
                 actions = {
                     BpkpadLogoutButton(
                         onClick = onLogout,

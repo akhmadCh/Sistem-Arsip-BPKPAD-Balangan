@@ -23,7 +23,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Info
@@ -56,7 +55,7 @@ import com.example.arsipbpkpad.R
 import com.example.arsipbpkpad.domain.model.UserRole
 import com.example.arsipbpkpad.presentation.components.BottomNavItem
 import com.example.arsipbpkpad.presentation.components.BpkpadBottomNavigation
-import com.example.arsipbpkpad.presentation.components.BpkpadTopAppBar
+import com.example.arsipbpkpad.presentation.components.BpkpadScreenTopAppBar
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -171,7 +170,9 @@ fun AnalyticsFilterContent(
                     availableYears = uiState.availableYears,
                     selectedYear = uiState.selectedYear,
                     onYearToggle = onYearToggle,
-                    onConfirmFilter = onConfirmFilter
+                    onConfirmFilter = onConfirmFilter,
+                    modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(bottom = 16.dp)
                 )
             }
         }
@@ -264,24 +265,9 @@ fun AnalyticsBarChart(
 
 @Composable
 fun AnalyticsFilterTopBar(onNavigateBack: () -> Unit) {
-    BpkpadTopAppBar(
-        title = {
-            Text(
-                text = stringResource(R.string.analytics_title),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.ExtraBold,
-                color = MaterialTheme.colorScheme.primary
-            )
-        },
-        navigationIcon = {
-            IconButton(onClick = onNavigateBack) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = stringResource(R.string.back),
-                    tint = MaterialTheme.colorScheme.primary
-                )
-            }
-        },
+    BpkpadScreenTopAppBar(
+        title = stringResource(R.string.analytics_title),
+        onNavigationClick = onNavigateBack,
         actions = {
             IconButton(onClick = { /* Profile */ }) {
                 Box(
@@ -309,10 +295,11 @@ fun AnalyticsYearSelectionList(
     selectedYear: Int?,
     onYearToggle: (Int) -> Unit,
     onConfirmFilter: () -> Unit,
+    modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(0.dp)
 ) {
     LazyColumn(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(16.dp),
         contentPadding = contentPadding
     ) {
@@ -503,16 +490,9 @@ fun AnalyticsResultsContent(
 
 @Composable
 fun AnalyticsResultsTopBar(onResetFilter: () -> Unit) {
-    BpkpadTopAppBar(
-        navigationIcon = {
-            IconButton(onClick = onResetFilter) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = stringResource(R.string.back),
-                    tint = MaterialTheme.colorScheme.primary
-                )
-            }
-        }
+    BpkpadScreenTopAppBar(
+        title = stringResource(R.string.analytics_title),
+        onNavigationClick = onResetFilter
     )
 }
 
@@ -521,6 +501,7 @@ fun AnalyticsResultsMain(uiState: AnalyticsUiState) {
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(20.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {

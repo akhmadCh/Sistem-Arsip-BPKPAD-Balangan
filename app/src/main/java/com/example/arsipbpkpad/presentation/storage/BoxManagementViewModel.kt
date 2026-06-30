@@ -97,6 +97,15 @@ class BoxManagementViewModel @Inject constructor(
         applyFilters()
     }
 
+    fun resetFilters() {
+        _uiState.update { it.copy(
+            selectedFilterRoom = null,
+            selectedFilterShelf = null,
+            filterShelves = emptyList(),
+            boxes = ResultState.Idle
+        ) }
+    }
+
     private fun applyFilters() {
         val selectedShelf = _uiState.value.selectedFilterShelf
         if (selectedShelf == null) {

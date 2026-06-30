@@ -17,11 +17,15 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Inventory
 import androidx.compose.material.icons.filled.Inventory2
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Warehouse
 import androidx.compose.material3.Card
@@ -30,7 +34,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
@@ -60,10 +63,9 @@ import com.example.arsipbpkpad.domain.model.BoxDetails
 import com.example.arsipbpkpad.domain.model.Room
 import com.example.arsipbpkpad.domain.model.Shelf
 import com.example.arsipbpkpad.domain.model.UserRole
-import com.example.arsipbpkpad.domain.model.canMutateArchive
 import com.example.arsipbpkpad.presentation.components.BottomNavItem
 import com.example.arsipbpkpad.presentation.components.BpkpadBottomNavigation
-import com.example.arsipbpkpad.presentation.components.BpkpadTopAppBar
+import com.example.arsipbpkpad.presentation.components.BpkpadLogoScreenTopAppBar
 import com.example.arsipbpkpad.ui.theme.ArsipBPKPADTheme
 import com.example.arsipbpkpad.utils.ResultState
 
@@ -81,6 +83,7 @@ fun BoxManagementScreen(
         onNavigateToBottomNav = onNavigateToBottomNav,
         onFilterRoomSelected = { viewModel.setFilterRoom(it) },
         onFilterShelfSelected = { viewModel.setFilterShelf(it) },
+        onResetFilters = { viewModel.resetFilters() },
         onClearErrors = { viewModel.clearErrors() }
     )
 }
@@ -92,6 +95,7 @@ fun BoxManagementContent(
     onNavigateToBottomNav: (BottomNavItem) -> Unit,
     onFilterRoomSelected: (Room) -> Unit,
     onFilterShelfSelected: (Shelf) -> Unit,
+    onResetFilters: () -> Unit,
     onClearErrors: () -> Unit
 ) {
     var showDialog by remember { mutableStateOf(false) }
@@ -100,15 +104,9 @@ fun BoxManagementContent(
 
     Scaffold(
         topBar = {
-            BpkpadTopAppBar(
-                title = {
-                    Text(
-                        text = stringResource(R.string.title_location_management),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = primaryColor
-                    )
-                }
+            BpkpadLogoScreenTopAppBar(
+                titleText = stringResource(R.string.title_location_management),
+                onNavigationClick = { onNavigateToBottomNav(BottomNavItem.HOME) }
             )
         },
         bottomBar = {
@@ -125,20 +123,45 @@ fun BoxManagementContent(
             Card(
                 modifier = Modifier.fillMaxWidth().padding(16.dp),
                 shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary)
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                )
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = stringResource(R.string.title_location_filter),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onPrimary
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = stringResource(R.string.title_location_filter),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                        
+                        if (uiState.selectedFilterRoom != null || uiState.selectedFilterShelf != null) {
+                            TextButton(
+                                onClick = onResetFilters,
+                                colors = androidx.compose.material3.ButtonDefaults.textButtonColors(
+                                    contentColor = MaterialTheme.colorScheme.onPrimary
+                                )
+                            ) {
+                                Text(
+                                    text = "Reset",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
                     Spacer(modifier = Modifier.height(16.dp))
                     
                     ReadOnlyLocationDropdown(
                         label = stringResource(R.string.label_select_warehouse),
                         value = uiState.selectedFilterRoom?.name ?: "",
+                        placeholder = "Pilih Gudang",
                         options = uiState.rooms,
                         onOptionSelected = { onFilterRoomSelected(it) },
                         getItemName = { it.name },
@@ -150,11 +173,13 @@ fun BoxManagementContent(
                     ReadOnlyLocationDropdown(
                         label = stringResource(R.string.label_select_rack),
                         value = uiState.selectedFilterShelf?.name ?: "",
+                        placeholder = "Pilih Rak",
                         options = uiState.filterShelves,
                         onOptionSelected = { onFilterShelfSelected(it) },
                         getItemName = { it.name },
                         enabled = uiState.selectedFilterRoom != null,
-                        leadingIcon = Icons.Default.Inventory2
+                        leadingIcon = Icons.Default.Inventory2,
+                        helperText = if (uiState.selectedFilterRoom == null) "Pilih gudang terlebih dahulu" else null
                     )
                 }
             }
@@ -170,7 +195,13 @@ fun BoxManagementContent(
                             )
                         } else {
                             LazyColumn(
-                                contentPadding = PaddingValues(16.dp),
+                                modifier = Modifier.fillMaxSize(),
+                                contentPadding = PaddingValues(
+                                    top = 16.dp,
+                                    start = 16.dp,
+                                    end = 16.dp,
+                                    bottom = 88.dp
+                                ),
                                 verticalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
                                 items(boxesState.data) { box ->
@@ -217,64 +248,107 @@ fun BoxManagementContent(
 fun <T> ReadOnlyLocationDropdown(
     label: String,
     value: String,
+    placeholder: String,
     options: List<T>,
     onOptionSelected: (T) -> Unit,
     getItemName: (T) -> String,
     leadingIcon: ImageVector? = null,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    helperText: String? = null
 ) {
     var expanded by remember { mutableStateOf(false) }
 
-    ExposedDropdownMenuBox(
-        expanded = expanded && enabled,
-        onExpandedChange = { if (enabled) expanded = !expanded }
-    ) {
-        OutlinedTextField(
-            value = value,
-            onValueChange = {},
-            readOnly = true,
-            label = { Text(label) },
-            modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
-            enabled = enabled,
-            leadingIcon = leadingIcon?.let {
-                { Icon(it, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary) }
-            },
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-            shape = RoundedCornerShape(12.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = MaterialTheme.colorScheme.surface,
-                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.38f),
-                focusedLabelColor = MaterialTheme.colorScheme.onPrimary,
-                focusedBorderColor = MaterialTheme.colorScheme.onPrimary,
-                cursorColor = MaterialTheme.colorScheme.onPrimary,
-                unfocusedLabelColor = if (value.isNotEmpty()) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f),
-                unfocusedBorderColor = if (value.isNotEmpty()) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.5f),
-                focusedTextColor = MaterialTheme.colorScheme.onPrimary,
-                unfocusedTextColor = MaterialTheme.colorScheme.onPrimary,
-                disabledTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
-                focusedTrailingIconColor = MaterialTheme.colorScheme.onPrimary,
-                unfocusedTrailingIconColor = MaterialTheme.colorScheme.onPrimary
-            )
-        )
-
-        ExposedDropdownMenu(
+    Column(modifier = Modifier.fillMaxWidth()) {
+        ExposedDropdownMenuBox(
             expanded = expanded && enabled,
-            onDismissRequest = { expanded = false },
-            containerColor = MaterialTheme.colorScheme.surface
+            onExpandedChange = { if (enabled) expanded = !expanded }
         ) {
-            options.forEach { option ->
-                DropdownMenuItem(
-                    leadingIcon = leadingIcon?.let {
-                        { Icon(it, contentDescription = null, modifier = Modifier.size(20.dp)) }
-                    },
-                    text = { Text(getItemName(option), color = MaterialTheme.colorScheme.onSurface) },
-                    onClick = {
-                        onOptionSelected(option)
-                        expanded = false
+            OutlinedTextField(
+                value = value,
+                onValueChange = {},
+                readOnly = true,
+                label = { Text(label) },
+                placeholder = {
+                    Text(
+                        text = placeholder
+                    )
+                },
+                modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
+                enabled = enabled,
+                leadingIcon = leadingIcon?.let {
+                    { 
+                        Icon(
+                            imageVector = it, 
+                            contentDescription = null, 
+                            tint = if (enabled) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
+                        ) 
                     }
+                },
+                trailingIcon = { 
+                    Icon(
+                        imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                        contentDescription = null,
+                        tint = if (enabled) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
+                    )
+                },
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                    disabledContainerColor = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.12f),
+                    
+                    focusedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                    unfocusedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                    disabledLabelColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f),
+                    
+                    focusedBorderColor = MaterialTheme.colorScheme.onPrimary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f),
+                    disabledBorderColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.5f),
+                    
+                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                    unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                    disabledTextColor = MaterialTheme.colorScheme.onPrimary,
+                    
+                    focusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                    unfocusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                    disabledPlaceholderColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
                 )
+            )
+
+            ExposedDropdownMenu(
+                expanded = expanded && enabled,
+                onDismissRequest = { expanded = false },
+                containerColor = MaterialTheme.colorScheme.surface,
+                modifier = Modifier.background(MaterialTheme.colorScheme.surface)
+            ) {
+                options.forEach { option ->
+                    DropdownMenuItem(
+                        leadingIcon = leadingIcon?.let {
+                            { Icon(it, contentDescription = null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary) }
+                        },
+                        text = { 
+                            Text(
+                                text = getItemName(option), 
+                                color = MaterialTheme.colorScheme.onSurface,
+                                style = MaterialTheme.typography.bodyLarge
+                            ) 
+                        },
+                        onClick = {
+                            onOptionSelected(option)
+                            expanded = false
+                        }
+                    )
+                }
             }
+        }
+        
+        if (helperText != null) {
+            Text(
+                text = helperText,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier.padding(start = 12.dp, top = 4.dp)
+            )
         }
     }
 }
@@ -385,7 +459,11 @@ fun BoxDetailDialog(
             shape = RoundedCornerShape(28.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
         ) {
-            Column(modifier = Modifier.padding(24.dp)) {
+            Column(
+                modifier = Modifier
+                    .verticalScroll(rememberScrollState())
+                    .padding(24.dp)
+            ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         modifier = Modifier
@@ -526,6 +604,7 @@ fun BoxManagementScreenPreview() {
             onNavigateToBottomNav = {},
             onFilterRoomSelected = {},
             onFilterShelfSelected = {},
+            onResetFilters = {},
             onClearErrors = {}
         )
     }

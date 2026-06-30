@@ -20,7 +20,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -55,10 +54,12 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.arsipbpkpad.R
 import com.example.arsipbpkpad.domain.model.ArchiveDocument
+import com.example.arsipbpkpad.domain.model.DocumentTypeDefaults
 import com.example.arsipbpkpad.domain.model.UserRole
 import com.example.arsipbpkpad.domain.model.canMutateArchive
 import com.example.arsipbpkpad.presentation.components.BpkpadConfirmDialog
 import com.example.arsipbpkpad.presentation.components.BpkpadTopAppBar
+import com.example.arsipbpkpad.presentation.components.BpkpadScreenTopAppBar
 import com.example.arsipbpkpad.presentation.components.DialogType
 import com.example.arsipbpkpad.presentation.components.DocStatusBadge
 import com.example.arsipbpkpad.ui.theme.ArsipBPKPADTheme
@@ -72,6 +73,7 @@ fun ArchiveDetailScreen(
     onNavigateBack: () -> Unit,
     onNavigateToArchive: (String) -> Unit,
     onNavigateToEdit: (String) -> Unit,
+    onNavigateToBottomNav: (com.example.arsipbpkpad.presentation.components.BottomNavItem) -> Unit,
     viewModel: ArchiveDetailViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -99,7 +101,8 @@ fun ArchiveDetailScreen(
         onDismissDialog = viewModel::dismissDeleteDialog,
         onDismissSuccess = viewModel::dismissSuccess,
         onDismissError = viewModel::dismissError,
-        onNavigateToArchive = onNavigateToArchive
+        onNavigateToArchive = onNavigateToArchive,
+        onNavigateToBottomNav = onNavigateToBottomNav
     )
 }
 
@@ -116,7 +119,8 @@ fun ArchiveDetailContent(
     onDismissDialog: () -> Unit,
     onDismissSuccess: () -> Unit,
     onDismissError: () -> Unit,
-    onNavigateToArchive: (String) -> Unit
+    onNavigateToArchive: (String) -> Unit,
+    onNavigateToBottomNav: (com.example.arsipbpkpad.presentation.components.BottomNavItem) -> Unit
 ) {
     if (state.showDeleteDialog) {
         BpkpadConfirmDialog(
@@ -169,9 +173,29 @@ fun ArchiveDetailContent(
         )
     }
 
+    val archive = state.archive
+    val normalizedType = archive?.type?.let { DocumentTypeDefaults.normalizeDocumentType(it) }
+    val isSpj = normalizedType == DocumentTypeDefaults.SPJ
+
+    val titleText = if (isSpj) {
+        stringResource(R.string.title_spj_detail)
+    } else {
+        archive?.documentNumber ?: stringResource(R.string.label_financial_dashboard)
+    }
+
     Scaffold(
         topBar = {
-            ArchiveDetailTopBar(onNavigateBack = onNavigateBack)
+            ArchiveDetailTopBar(
+                title = titleText,
+                onNavigateBack = onNavigateBack
+            )
+        },
+        bottomBar = {
+            com.example.arsipbpkpad.presentation.components.BpkpadBottomNavigation(
+                currentRoute = com.example.arsipbpkpad.presentation.components.BottomNavItem.ARCHIVE.route,
+                userRole = userRole,
+                onNavigate = onNavigateToBottomNav
+            )
         },
         containerColor = MaterialTheme.colorScheme.surface
     ) { paddingValues ->
@@ -197,25 +221,13 @@ fun ArchiveDetailContent(
 }
 
 @Composable
-fun ArchiveDetailTopBar(onNavigateBack: () -> Unit) {
-    BpkpadTopAppBar(
-        title = {
-            Text(
-                text = stringResource(R.string.label_financial_dashboard),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.ExtraBold,
-                color = MaterialTheme.colorScheme.primary
-            )
-        },
-        navigationIcon = {
-            IconButton(onClick = onNavigateBack) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack, 
-                    contentDescription = stringResource(R.string.back),
-                    tint = MaterialTheme.colorScheme.primary
-                )
-            }
-        }
+fun ArchiveDetailTopBar(
+    title: String,
+    onNavigateBack: () -> Unit
+) {
+    BpkpadScreenTopAppBar(
+        title = title,
+        onNavigationClick = onNavigateBack
     )
 }
 
@@ -249,7 +261,12 @@ fun ArchiveDetailMainList(
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(20.dp),
+        contentPadding = PaddingValues(
+            top = 20.dp,
+            start = 20.dp,
+            end = 20.dp,
+            bottom = 88.dp
+        ),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item { ArchiveDetailHeader(archive) }
@@ -309,6 +326,9 @@ fun ArchiveDetailMainList(
 
 @Composable
 fun ArchiveDetailHeader(archive: ArchiveDocument) {
+    val normalizedType = DocumentTypeDefaults.normalizeDocumentType(archive.type)
+    val isSpj = normalizedType == DocumentTypeDefaults.SPJ
+
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -331,13 +351,15 @@ fun ArchiveDetailHeader(archive: ArchiveDocument) {
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
                 }
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    text = archive.documentNumber ?: "-",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground
-                )
+                if (!isSpj) {
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = archive.documentNumber ?: "-",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                }
             }
 
             DocStatusBadge(status = archive.status.name)
@@ -354,20 +376,44 @@ fun ArchiveFinancialCard(archive: ArchiveDocument) {
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
         Column(modifier = Modifier.padding(24.dp)) {
-            Text(
-                text = stringResource(R.string.label_nominal_transaction),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            val formatter = NumberFormat.getCurrencyInstance(Locale("id", "ID"))
-            Text(
-                text = formatter.format(archive.nominal ?: 0.0),
-                style = MaterialTheme.typography.displaySmall,
-                fontWeight = FontWeight.Black,
-                color = MaterialTheme.colorScheme.primary
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.label_nominal_transaction),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    val formatter = NumberFormat.getCurrencyInstance(Locale("id", "ID"))
+                    Text(
+                        text = formatter.format(archive.nominal ?: 0.0),
+                        style = MaterialTheme.typography.displaySmall,
+                        fontWeight = FontWeight.Black,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+                
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        text = "Tahun",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = archive.year.toString(),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
+            
             Spacer(modifier = Modifier.height(16.dp))
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             Spacer(modifier = Modifier.height(16.dp))
@@ -479,6 +525,9 @@ fun RelatedBundleHeader() {
 
 @Composable
 fun RelatedArchiveItem(related: ArchiveDocument, onClick: () -> Unit) {
+    val normalizedType = DocumentTypeDefaults.normalizeDocumentType(related.type)
+    val isSpj = normalizedType == DocumentTypeDefaults.SPJ
+
     Card(
         modifier = Modifier.fillMaxWidth().clickable { onClick() },
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -488,12 +537,12 @@ fun RelatedArchiveItem(related: ArchiveDocument, onClick: () -> Unit) {
         ListItem(
             headlineContent = {
                 Text(
-                    text = related.documentNumber ?: "-",
+                    text = if (isSpj) related.type else (related.documentNumber ?: "-"),
                     fontWeight = FontWeight.Bold
                 )
             },
             supportingContent = {
-                Text(text = related.type)
+                Text(text = if (isSpj) (related.description ?: "-") else related.type)
             },
             leadingContent = {
                 Box(
@@ -738,7 +787,8 @@ fun ArchiveDetailPreview() {
             onDismissDialog = {},
             onDismissSuccess = {},
             onDismissError = {},
-            onNavigateToArchive = {}
+            onNavigateToArchive = {},
+            onNavigateToBottomNav = {}
         )
     }
 }

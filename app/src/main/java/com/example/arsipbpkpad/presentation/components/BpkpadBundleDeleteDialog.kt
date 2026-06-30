@@ -52,7 +52,7 @@ fun BpkpadBundleDeleteDialog(
             )
         },
         confirmButton = {
-            Column(modifier = Modifier.fillMaxWidth().padding(top = 16.dp)) {
+            Column(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
                 Button(
                     onClick = onDeleteThis,
                     colors = ButtonDefaults.buttonColors(
@@ -67,7 +67,9 @@ fun BpkpadBundleDeleteDialog(
                         fontWeight = FontWeight.Bold
                     )
                 }
+                
                 Spacer(modifier = Modifier.height(8.dp))
+                
                 OutlinedButton(
                     onClick = onDeleteBundle,
                     colors = ButtonDefaults.outlinedButtonColors(
@@ -82,20 +84,23 @@ fun BpkpadBundleDeleteDialog(
                         fontWeight = FontWeight.Bold
                     )
                 }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                TextButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = stringResource(R.string.btn_cancel),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
             }
         },
-        dismissButton = {
-            TextButton(
-                onClick = onDismiss,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(
-                    text = stringResource(R.string.btn_cancel),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        },
+        dismissButton = null,
         containerColor = MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(24.dp)
     )

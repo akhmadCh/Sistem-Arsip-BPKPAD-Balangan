@@ -209,6 +209,31 @@ fun AppNavHost(
                         if (currentUserRole.canMutateArchive()) {
                             navController.navigate(Screen.EditArchive.createRoute(id))
                         }
+                    },
+                    onNavigateToBottomNav = { item ->
+                        when (item.route) {
+                            navHomeId -> navController.navigate(Screen.Home.route)
+                            navArchiveId -> {
+                                navController.navigate(archiveFlowRoute) {
+                                    popUpTo(archiveFlowRoute) { inclusive = true }
+                                }
+                            }
+                            navStorageId -> {
+                                if (currentUserRole.canManageStorage()) {
+                                    navController.navigate(Screen.BoxManagement.route)
+                                }
+                            }
+                            navAddId -> {
+                                if (currentUserRole.canManageStaging()) {
+                                    navController.navigate(Screen.StagingBoxList.route)
+                                }
+                            }
+                            navAnalyticsId -> {
+                                if (currentUserRole.canViewAnalytics()) {
+                                    navController.navigate(Screen.Analytics.route)
+                                }
+                            }
+                        }
                     }
                 )
             }

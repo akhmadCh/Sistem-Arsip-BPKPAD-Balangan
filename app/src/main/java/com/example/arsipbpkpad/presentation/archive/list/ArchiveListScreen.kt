@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -26,7 +27,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
@@ -82,6 +82,8 @@ import com.example.arsipbpkpad.presentation.components.BottomNavItem
 import com.example.arsipbpkpad.presentation.components.BpkpadBottomNavigation
 import com.example.arsipbpkpad.presentation.components.BpkpadConfirmDialog
 import com.example.arsipbpkpad.presentation.components.BpkpadExpandableFAB
+import com.example.arsipbpkpad.presentation.components.BpkpadLogoScreenTopAppBar
+import com.example.arsipbpkpad.presentation.components.BpkpadSelectionTopAppBar
 import com.example.arsipbpkpad.presentation.components.StatusDialog
 import com.example.arsipbpkpad.ui.theme.ArsipBPKPADTheme
 import com.example.arsipbpkpad.utils.DateUtils
@@ -250,14 +252,14 @@ fun ArchiveListScreen(
     Scaffold(
         topBar = {
             if (uiState.isSelectionMode) {
-                SelectionTopBar(
+                BpkpadSelectionTopAppBar(
                     selectedCount = uiState.selectedArchiveIds.size,
                     onClearSelection = { viewModel.onEvent(ArchiveListUiEvent.ToggleSelectionMode()) }
                 )
             } else {
-                ArchiveListTopBar(
-                    isFilterConfirmed = uiState.isFilterConfirmed,
-                    onBackClick = {
+                BpkpadLogoScreenTopAppBar(
+                    titleText = if (uiState.isFilterConfirmed) stringResource(R.string.archive_list_title) else stringResource(R.string.archival_repository_title),
+                    onNavigationClick = {
                         if (uiState.isFilterConfirmed) {
                             viewModel.onEvent(ArchiveListUiEvent.OnResetFilter)
                         } else {
@@ -348,58 +350,6 @@ fun ArchiveListScreen(
             }
         }
     }
-}
-
-@Composable
-fun ArchiveListTopBar(
-    isFilterConfirmed: Boolean,
-    onBackClick: () -> Unit
-) {
-    com.example.arsipbpkpad.presentation.components.BpkpadTopAppBar(
-        title = {
-            Text(
-                text = if (isFilterConfirmed) stringResource(R.string.archive_list_title) else stringResource(R.string.archival_repository_title),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.ExtraBold,
-                color = MaterialTheme.colorScheme.primary
-            )
-        },
-        navigationIcon = {
-            IconButton(onClick = onBackClick) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = stringResource(R.string.back),
-                    tint = MaterialTheme.colorScheme.primary
-                )
-            }
-        }
-    )
-}
-
-@Composable
-fun SelectionTopBar(
-    selectedCount: Int,
-    onClearSelection: () -> Unit
-) {
-    com.example.arsipbpkpad.presentation.components.BpkpadTopAppBar(
-        title = {
-            Text(
-                text = stringResource(R.string.label_selected_count, selectedCount),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-        },
-        navigationIcon = {
-            IconButton(onClick = onClearSelection) {
-                Icon(
-                    imageVector = Icons.Default.Close,
-                    contentDescription = stringResource(R.string.btn_clear_selection),
-                    tint = MaterialTheme.colorScheme.primary
-                )
-            }
-        }
-    )
 }
 
 @Composable
@@ -637,7 +587,8 @@ fun ArchiveListContentOnly(
             onArchiveLongClick = onArchiveLongClick,
             isSelectionMode = isSelectionMode,
             selectedArchiveIds = selectedArchiveIds,
-            paddingValues = paddingValues
+            paddingValues = paddingValues,
+            modifier = Modifier.weight(1f)
         )
     }
 }
@@ -786,6 +737,7 @@ fun DocTypeFilterRow(selectedFilter: String, onFilterChange: (String) -> Unit) {
 @Composable
 fun ArchiveResultList(
     archives: List<ArchiveDocument>,
+    modifier: Modifier = Modifier,
     onArchiveClick: (String) -> Unit,
     onArchiveLongClick: (String) -> Unit = {},
     isSelectionMode: Boolean = false,
@@ -794,7 +746,7 @@ fun ArchiveResultList(
 ) {
     val scrollState = rememberScrollState()
     
-    androidx.compose.foundation.layout.BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+    androidx.compose.foundation.layout.BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val minTableWidth = (if (isSelectionMode) 48.dp else 0.dp) + 632.dp // Total of min widths from ArchiveTableHeader
         val tableWidth = maxOf(maxWidth, minTableWidth)
 
@@ -803,14 +755,16 @@ fun ArchiveResultList(
                 .fillMaxSize()
                 .horizontalScroll(scrollState)
         ) {
-            Column(modifier = Modifier.width(tableWidth)) {
+            Column(modifier = Modifier.width(tableWidth).fillMaxHeight()) {
                 ArchiveTableHeader(isSelectionMode = isSelectionMode)
                 
                 if (archives.isNotEmpty()) {
                     LazyColumn(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
                         contentPadding = PaddingValues(
-                            bottom = paddingValues.calculateBottomPadding() + 88.dp
+                            bottom = 88.dp
                         ),
                     ) {
                         items(archives.size) { index ->

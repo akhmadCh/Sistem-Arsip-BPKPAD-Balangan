@@ -17,15 +17,15 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -51,7 +51,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -67,7 +66,7 @@ import com.example.arsipbpkpad.domain.model.canManageStaging
 import com.example.arsipbpkpad.presentation.components.BottomNavItem
 import com.example.arsipbpkpad.presentation.components.BpkpadBottomNavigation
 import com.example.arsipbpkpad.presentation.components.BpkpadConfirmDialog
-import com.example.arsipbpkpad.presentation.components.BpkpadTopAppBar
+import com.example.arsipbpkpad.presentation.components.BpkpadLogoScreenTopAppBar
 import com.example.arsipbpkpad.presentation.components.DialogType
 import com.example.arsipbpkpad.presentation.components.FormDropdownField
 import com.example.arsipbpkpad.presentation.components.HierarchicalLocationSelector
@@ -230,32 +229,9 @@ fun StagingBoxListTopBar(
     onSyncClick: () -> Unit,
     userRole: UserRole = UserRole.UNKNOWN
 ) {
-    BpkpadTopAppBar(
-        navigationIcon = {
-            IconButton(onClick = onBackClick) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = stringResource(R.string.back),
-                    tint = MaterialTheme.colorScheme.primary
-                )
-            }
-        },
-        title = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                androidx.compose.foundation.Image(
-                    painter = androidx.compose.ui.res.painterResource(id = R.drawable.logo_balangan),
-                    contentDescription = null,
-                    modifier = Modifier.size(32.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = stringResource(R.string.staging_status_title),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-        },
+    BpkpadLogoScreenTopAppBar(
+        titleText = stringResource(R.string.staging_status_title),
+        onNavigationClick = onBackClick,
         actions = {
             if (userRole.canManageStaging()) {
                 TextButton(
@@ -277,8 +253,7 @@ fun StagingBoxListTopBar(
                     )
                 }
             }
-        },
-        containerColor = Color.Transparent
+        }
     )
 }
 
@@ -306,7 +281,12 @@ fun StagingBoxListContent(
     Column(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
             modifier = Modifier.weight(1f),
-            contentPadding = PaddingValues(20.dp),
+            contentPadding = PaddingValues(
+                top = 20.dp,
+                start = 20.dp,
+                end = 20.dp,
+                bottom = 32.dp
+            ),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             items(boxes) { box ->
@@ -560,7 +540,11 @@ fun AddBoxDialog(
             shape = RoundedCornerShape(24.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
         ) {
-            Column(modifier = Modifier.padding(24.dp)) {
+            Column(
+                modifier = Modifier
+                    .verticalScroll(rememberScrollState())
+                    .padding(24.dp)
+            ) {
                 Text(
                     text = stringResource(R.string.title_init_new_box),
                     style = MaterialTheme.typography.titleLarge,

@@ -24,7 +24,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Delete
@@ -69,7 +68,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -91,7 +89,7 @@ import com.example.arsipbpkpad.domain.model.UserRole
 import com.example.arsipbpkpad.domain.model.canMutateArchive
 import com.example.arsipbpkpad.presentation.components.BottomNavItem
 import com.example.arsipbpkpad.presentation.components.BpkpadConfirmDialog
-import com.example.arsipbpkpad.presentation.components.BpkpadTopAppBar
+import com.example.arsipbpkpad.presentation.components.BpkpadLogoScreenTopAppBar
 import com.example.arsipbpkpad.presentation.components.FormDropdownField
 import com.example.arsipbpkpad.presentation.components.FormEditableDropdownField
 import com.example.arsipbpkpad.presentation.components.FormTextField
@@ -220,9 +218,9 @@ fun RapidInputScreen(
 
     Scaffold(
         topBar = {
-            RapidInputTopBar(
-                boxName = uiState.boxContext.box,
-                onNavigateBack = onNavigateBack
+            BpkpadLogoScreenTopAppBar(
+                titleText = stringResource(R.string.title_input_box, uiState.boxContext.box),
+                onNavigationClick = onNavigateBack
             )
         },
         floatingActionButton = {
@@ -264,7 +262,7 @@ fun RapidInputScreen(
                 ) {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(vertical = 16.dp)
+                        contentPadding = PaddingValues(top = 16.dp, bottom = 32.dp)
                     ) {
                         item {
                             RapidInputForm(
@@ -305,7 +303,7 @@ fun RapidInputScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                     LazyColumn(
                         modifier = Modifier.weight(1f),
-                        contentPadding = PaddingValues(bottom = 16.dp),
+                        contentPadding = PaddingValues(bottom = 32.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         items(uiState.stagedDocuments, key = { it.id }) { doc ->
@@ -327,7 +325,11 @@ fun RapidInputScreen(
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(paddingValues)
+                    .padding(horizontal = 0.dp),
+                contentPadding = PaddingValues(
+                    top = paddingValues.calculateTopPadding(),
+                    bottom = paddingValues.calculateBottomPadding() + 88.dp
+                )
             ) {
                 item {
                     RapidInputForm(
@@ -378,37 +380,6 @@ fun RapidInputScreen(
             }
         }
     }
-}
-
-@Composable
-fun RapidInputTopBar(boxName: String, onNavigateBack: () -> Unit) {
-    BpkpadTopAppBar(
-        title = { 
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                androidx.compose.foundation.Image(
-                    painter = painterResource(id = R.drawable.logo_balangan),
-                    contentDescription = null,
-                    modifier = Modifier.size(32.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = stringResource(R.string.title_input_box, boxName),
-                    style = MaterialTheme.typography.titleMedium, 
-                    fontWeight = FontWeight.ExtraBold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-        },
-        navigationIcon = {
-            IconButton(onClick = onNavigateBack) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack, 
-                    contentDescription = stringResource(R.string.back),
-                    tint = MaterialTheme.colorScheme.primary
-                )
-            }
-        }
-    )
 }
 
 @Composable
