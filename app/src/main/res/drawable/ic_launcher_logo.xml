@@ -3,6 +3,6 @@
     <item
         android:drawable="@drawable/logo_balangan"
         android:gravity="center"
-        android:width="72dp"
-        android:height="78dp" />
+        android:width="64dp"
+        android:height="69dp" />
 </layer-list>
